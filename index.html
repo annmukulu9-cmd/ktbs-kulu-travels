@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KTBS — Kulu Travels Business System</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+<div id="login" class="login-shell"><div class="login-card">
+<img class="login-logo" src="kulu-logo.png" alt="Kulu Travels">
+<div class="eyebrow">KULU TRAVELS</div><h1>Business Management System</h1>
+<p>Clients · Journeys · Experiences</p>
+<form id="loginForm"><label>Username<input id="username" value="admin" required></label>
+<label>Password<input id="password" type="password" value="kulu123" required></label>
+<button class="primary full">Sign in</button><small>Demo access: admin / kulu123</small></form></div></div>
+<div id="app" class="app hidden">
+<aside class="sidebar"><div class="side-brand"><img src="kulu-logo.png" alt="Kulu"></div>
+<nav id="nav">
+<button data-page="dashboard" class="active">⌂ <span>Dashboard</span></button>
+<button data-page="clients">◎ <span>Client Master</span></button>
+<button data-page="quotations">▤ <span>Quotations</span></button>
+<button data-page="bookings">✈ <span>Bookings</span></button>
+<button data-page="suppliers">◇ <span>Suppliers</span></button>
+<button data-page="hotels">⌂ <span>Hotels</span></button>
+<button data-page="finance">▰ <span>Finance</span></button>
+<button data-page="history">↺ <span>Travel History</span></button>
+<button data-page="reports">▥ <span>Reports</span></button>
+<button data-page="settings">⚙ <span>Settings</span></button>
+</nav><div class="side-footer">KTBS v2.0<br>Kulu Travels</div></aside>
+<main class="main"><header class="topbar"><div><div class="eyebrow">KULU TRAVELS</div><h2 id="pageTitle">Dashboard</h2></div>
+<div class="top-actions"><input id="globalSearch" placeholder="Search clients, bookings, quotations…" oninput="globalSearch(this.value)"><span class="avatar">A</span><span>Ann</span><button id="logout">Logout</button></div></header>
+<section id="content"></section></main></div>
+<div id="modal" class="modal hidden"><div class="modal-card"><div class="modal-head"><h3 id="modalTitle"></h3><button onclick="closeModal()">×</button></div><div id="modalBody"></div></div></div>
+<script src="app.js"></script><div id="roleBadge" class="role-badge">ADMIN</div><script>setTimeout(renderRoleUI,0)</script></body></html>
