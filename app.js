@@ -134,21 +134,7 @@ async function startApp(){if(!window.KTBS_SUPABASE_URL||window.KTBS_SUPABASE_URL
 async function enterApp(user){
   me=user;
 
-  let r=await sb.from('profiles')
-    .select('*')
-    .eq('id',user.id)
-    .maybeSingle();
-
-  if(r.error || !r.data){
-    const fallback=await sb.from('profiles')
-      .select('*')
-      .eq('email',user.email)
-      .maybeSingle();
-
-    if(!fallback.error && fallback.data){
-      r=fallback;
-    }
-  }
+  const r=await sb.rpc('get_my_profile');
 
   if(r.error || !r.data){
     return alert('Staff profile not found. Please ensure the Supabase profile exists for this login.');
@@ -159,6 +145,17 @@ async function enterApp(user){
   if(!profile.active){
     return alert('This staff account is inactive.');
   }
+
+  $('login').classList.add('hidden');
+  $('app').classList.remove('hidden');
+
+  $('userName').textContent=profile.full_name||user.email||'Staff';
+  $('avatar').textContent=(profile.full_name||user.email||'K').charAt(0).toUpperCase();
+  $('roleBadge').textContent=(profile.role||'consultant').toUpperCase();
+
+  await loadData();
+  render();
+}
 
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
