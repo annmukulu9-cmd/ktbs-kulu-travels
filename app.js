@@ -157,15 +157,7 @@ async function enterApp(user){
   render();
 }
 
-  $('login').classList.add('hidden');
-  $('app').classList.remove('hidden');
-  $('userName').textContent=profile.full_name||user.email||'Staff';
-  $('avatar').textContent=(profile.full_name||user.email||'K').charAt(0).toUpperCase();
-  $('roleBadge').textContent=profile.role.toUpperCase();
-
-  await loadData();
-  render();
-}
+ 
 $('loginForm').onsubmit=async e=>{e.preventDefault();$('loginMessage').textContent='Signing in…';const {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){$('loginMessage').textContent=error.message;return}await enterApp(data.user)};
 $('logout').onclick=async()=>{await sb.auth.signOut();location.reload()};
 $('globalSearch').oninput=e=>{const v=e.target.value.trim();if(!v)return;const c=cache.clients.filter(x=>Object.values(x).join(' ').toLowerCase().includes(v.toLowerCase()));if(c.length){go('clients');setTimeout(()=>{if($('clientFilter')){$('clientFilter').value=v;filterClient()}},0)}};
