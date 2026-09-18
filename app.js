@@ -131,7 +131,44 @@ async function showStaff(){const rows=await q('profiles');openModal('KTBS Staff 
 async function changeRole(id,role){if(!isAdmin())return;const r=await sb.from('profiles').update({role}).eq('id',id);if(r.error)return alert(r.error.message);await refresh();showStaff()}
 
 async function startApp(){if(!window.KTBS_SUPABASE_URL||window.KTBS_SUPABASE_URL.includes('PASTE_')){$('loginMessage').textContent='Supabase connection is not configured.';return}const {data:{session}}=await sb.auth.getSession();if(session)await enterApp(session.user)}
-async function enterApp(user){me=user;const r=await sb.from('profiles').select('*').eq('id',user.id).single();if(r.error)return alert('Staff profile not found. Please ensure the Supabase profile exists for this login.');profile=r.data;if(!profile.active)return alert('This staff account is inactive.');$('login').classList.add('hidden');$('app').classList.remove('hidden');$('userName').textContent=profile.full_name||user.email||'Staff';$('avatar').textContent=(profile.full_name||user.email||'K').charAt(0).toUpperCase();$('roleBadge').textContent=profile.role.toUpperCase();await loadData();render()}
+async function enterApp(user){
+  me=user;
+
+  let r=await sb.from('profiles')
+    .select('*')
+    .eq('id',user.id)
+    .maybeSingle();
+
+  if(r.error || !r.data){
+    const fallback=await sb.from('profiles')
+      .select('*')
+      .eq('email',user.email)
+      .maybeSingle();
+
+    if(!fallback.error && fallback.data){
+      r=fallback;
+    }
+  }
+
+  if(r.error || !r.data){
+    return alert('Staff profile not found. Please ensure the Supabase profile exists for this login.');
+  }
+
+  profile=r.data;
+
+  if(!profile.active){
+    return alert('This staff account is inactive.');
+  }
+
+  $('login').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  $('userName').textContent=profile.full_name||user.email||'Staff';
+  $('avatar').textContent=(profile.full_name||user.email||'K').charAt(0).toUpperCase();
+  $('roleBadge').textContent=profile.role.toUpperCase();
+
+  await loadData();
+  render();
+}
 $('loginForm').onsubmit=async e=>{e.preventDefault();$('loginMessage').textContent='Signing in…';const {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){$('loginMessage').textContent=error.message;return}await enterApp(data.user)};
 $('logout').onclick=async()=>{await sb.auth.signOut();location.reload()};
 $('globalSearch').oninput=e=>{const v=e.target.value.trim();if(!v)return;const c=cache.clients.filter(x=>Object.values(x).join(' ').toLowerCase().includes(v.toLowerCase()));if(c.length){go('clients');setTimeout(()=>{if($('clientFilter')){$('clientFilter').value=v;filterClient()}},0)}};
