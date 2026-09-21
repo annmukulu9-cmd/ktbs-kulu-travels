@@ -104,7 +104,406 @@ function filterBookings(){$('bookingTable').innerHTML=bookingTable(999,$('bookin
 function partnerOptions(list,selected){return list.map(x=>`<option value="${x.id}" ${x.id===selected?'selected':''}>${esc(x.name)}</option>`).join('')}
 async function savePartnerFromBooking(type){const name=($(type==='supplier'?'bookingSupplierNew':'bookingHotelNew')?.value||'').trim();if(!name)return alert(`Enter a ${type} name first.`);const table=type==='supplier'?'suppliers':'hotels';const exists=cache[table].find(x=>x.name.toLowerCase()===name.toLowerCase());if(exists){$(type==='supplier'?'bookingSupplierId':'bookingHotelId').value=exists.id;return}const payload=type==='supplier'?{name,type:'Travel Supplier',created_by:me.id}:{name,destination:'',created_by:me.id};const r=await sb.from(table).insert(payload).select().single();if(r.error)return alert(r.error.message);await loadData();$(type==='supplier'?'bookingSupplierId':'bookingHotelId').value=r.data.id;alert(`${type[0].toUpperCase()+type.slice(1)} saved to the master list.`)}
 async function openBooking(id){const b=bookingById(id);if(!b)return;if(!isAdmin())return alert('Saved bookings are locked for consultants. An administrator can edit this booking.');await editBooking(b)}
-async function editBooking(b){const c=clientById(b.client_id),f=financeForBooking(b);openModal('Booking '+b.booking_no,`<form id="editBook"><div class="form-grid"><label>Client<input value="${esc(c?.name||'')} — ${esc(c?.client_code||'')}" readonly></label><label>Quotation<input value="${esc(quoteById(b.quotation_id)?.quotation_no||'')}" readonly></label><label>Destination<input value="${esc(b.destination||'')}" readonly></label><label>Travel Date<input value="${esc(b.departure||'')}" readonly></label><label>Selling Amount<input type="number" name="selling_amount" value="${b.selling_amount||0}"></label><label>Supplier Cost<input type="number" name="supplier_cost" value="${b.supplier_cost||0}"></label><label>Other Expenses<input type="number" name="other_expenses" value="${b.other_expenses||0}"></label><label>Supplier<select name="supplier_id" id="bookingSupplierId"><option value="">Select supplier…</option>${partnerOptions(cache.suppliers,b.supplier_id)}</select><input id="bookingSupplierNew" placeholder="Or type new supplier"><button type="button" onclick="savePartnerFromBooking('supplier')">＋ Save New Supplier</button></label><label>Hotel<select name="hotel_id" id="bookingHotelId"><option value="">Select hotel…</option>${partnerOptions(cache.hotels,b.hotel_id)}</select><input id="bookingHotelNew" placeholder="Or type new hotel"><button type="button" onclick="savePartnerFromBooking('hotel')">＋ Save New Hotel</button></label><label>Booking Status<select name="status">${STATUS.map(x=>`<option ${b.status===x?'selected':''}>${x}</option>`).join('')}</select></label><label>Booking Reference<input name="reference" value="${esc(b.reference||'')}"></label><label class="wide">Notes<textarea name="notes">${esc(b.notes||'')}</textarea></label></div><div class="card total-box"><div><b>Client Balance</b><b id="ebalance">${money(f.balance)}</b></div><div><b>Supplier Pending</b><b id="esbalance">${money(f.supplierPending)}</b></div><div><b>Gross Profit</b><b id="eprofit">${money(f.gross)}</b></div><div><b>Net Profit</b><b id="enprofit">${money(f.net)}</b></div></div><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Booking</button></div></form>`);$('editBook').addEventListener('input',()=>{const x=Object.fromEntries(new FormData($('editBook'))),s=+x.selling_amount||0,cost=+x.supplier_cost||0,e=+x.other_expenses||0;ebalance.textContent=money(s-f.clientPaid);esbalance.textContent=money(cost-f.supplierPaid);eprofit.textContent=money(s-cost);enprofit.textContent=money(s-cost-e)});$('editBook').onsubmit=async e=>{e.preventDefault();const x=Object.fromEntries(new FormData(e.target));const r=await sb.from('bookings').update({selling_amount:+x.selling_amount||0,supplier_cost:+x.supplier_cost||0,other_expenses:+x.other_expenses||0,supplier_id:x.supplier_id||null,supplier_name:cache.suppliers.find(s=>s.id===x.supplier_id)?.name||null,hotel_id:x.hotel_id||null,hotel_name:cache.hotels.find(h=>h.id===x.hotel_id)?.name||null,status:x.status,reference:x.reference||'',notes:x.notes||''}).eq('id',b.id);if(r.error)return alert(r.error.message);await syncClientStatus(b.client_id,x.status);await syncHistory(b.id);await refresh();closeModal();go('bookings')}
+async function editBooking(b){
+  const c=clientById(b.client_id);
+  const f=financeForBooking(b);
+
+  openModal('Booking '+b.booking_no,`
+    <form id="editBook">
+
+      <div class="form-grid">
+
+        <label>
+          Client
+          <input value="${esc(c?.name||'')} — ${esc(c?.client_code||'')}" readonly>
+        </label>
+
+        <label>
+          Quotation
+          <input value="${esc(quoteById(b.quotation_id)?.quotation_no||'')}" readonly>
+        </label>
+
+        <label>
+          Destination
+          <input value="${esc(b.destination||'')}" readonly>
+        </label>
+
+        <label>
+          Travel Date
+          <input value="${esc(b.departure||'')}" readonly>
+        </label>
+
+        <label>
+          Selling Amount
+          <input type="number"
+                 name="selling_amount"
+                 value="${b.selling_amount||0}"
+                 min="0">
+        </label>
+
+        <label>
+          Client Paid
+          <input type="number"
+                 name="client_paid"
+                 value="${f.clientPaid||0}"
+                 min="0">
+        </label>
+
+        <label>
+          Supplier Cost
+          <input type="number"
+                 name="supplier_cost"
+                 value="${b.supplier_cost||0}"
+                 min="0">
+        </label>
+
+        <label>
+          Supplier Paid
+          <input type="number"
+                 name="supplier_paid"
+                 value="${f.supplierPaid||0}"
+                 min="0">
+        </label>
+
+        <label>
+          Other Expenses
+          <input type="number"
+                 name="other_expenses"
+                 value="${b.other_expenses||0}"
+                 min="0">
+        </label>
+
+        <label>
+          Supplier
+          <select name="supplier_id" id="bookingSupplierId">
+            <option value="">Select supplier…</option>
+            ${partnerOptions(cache.suppliers,b.supplier_id)}
+          </select>
+
+          <input id="bookingSupplierNew"
+                 placeholder="Or type new supplier">
+
+          <button type="button"
+                  onclick="savePartnerFromBooking('supplier')">
+            ＋ Save New Supplier
+          </button>
+        </label>
+
+        <label>
+          Hotel
+          <select name="hotel_id" id="bookingHotelId">
+            <option value="">Select hotel…</option>
+            ${partnerOptions(cache.hotels,b.hotel_id)}
+          </select>
+
+          <input id="bookingHotelNew"
+                 placeholder="Or type new hotel">
+
+          <button type="button"
+                  onclick="savePartnerFromBooking('hotel')">
+            ＋ Save New Hotel
+          </button>
+        </label>
+
+        <label>
+          Booking Status
+          <select name="status">
+            ${STATUS.map(x=>`
+              <option ${b.status===x?'selected':''}>${x}</option>
+            `).join('')}
+          </select>
+        </label>
+
+        <label>
+          Booking Reference
+          <input name="reference"
+                 value="${esc(b.reference||'')}">
+        </label>
+
+        <label class="wide">
+          Notes
+          <textarea name="notes">${esc(b.notes||'')}</textarea>
+        </label>
+
+      </div>
+
+      <div class="card total-box">
+
+        <div>
+          <b>Client Balance</b>
+          <b id="ebalance">${money(f.balance)}</b>
+        </div>
+
+        <div>
+          <b>Supplier Pending</b>
+          <b id="esbalance">${money(f.supplierPending)}</b>
+        </div>
+
+        <div>
+          <b>Gross Profit</b>
+          <b id="eprofit">${money(f.gross)}</b>
+        </div>
+
+        <div>
+          <b>Net Profit</b>
+          <b id="enprofit">${money(f.net)}</b>
+        </div>
+
+      </div>
+
+      <div class="actions">
+        <button type="button" onclick="closeModal()">Cancel</button>
+        <button class="primary" type="submit">
+          Save Booking
+        </button>
+      </div>
+
+    </form>
+  `);
+
+  $('editBook').addEventListener('input',()=>{
+
+    const x=Object.fromEntries(
+      new FormData($('editBook'))
+    );
+
+    const selling=Number(x.selling_amount)||0;
+    const clientPaid=Number(x.client_paid)||0;
+    const supplierCost=Number(x.supplier_cost)||0;
+    const supplierPaid=Number(x.supplier_paid)||0;
+    const expenses=Number(x.other_expenses)||0;
+
+    $('ebalance').textContent=
+      money(selling-clientPaid);
+
+    $('esbalance').textContent=
+      money(supplierCost-supplierPaid);
+
+    $('eprofit').textContent=
+      money(selling-supplierCost);
+
+    $('enprofit').textContent=
+      money(selling-supplierCost-expenses);
+  });
+
+  $('editBook').onsubmit=async e=>{
+
+    e.preventDefault();
+
+    const x=Object.fromEntries(
+      new FormData(e.target)
+    );
+
+    const selling=Number(x.selling_amount)||0;
+    const clientPaid=Number(x.client_paid)||0;
+    const supplierCost=Number(x.supplier_cost)||0;
+    const supplierPaid=Number(x.supplier_paid)||0;
+    const expenses=Number(x.other_expenses)||0;
+
+    /*
+      Save the main booking information.
+    */
+    const r=await sb
+      .from('bookings')
+      .update({
+        selling_amount:selling,
+        supplier_cost:supplierCost,
+        other_expenses:expenses,
+        supplier_id:x.supplier_id||null,
+        supplier_name:
+          cache.suppliers.find(s=>s.id===x.supplier_id)?.name||null,
+        hotel_id:x.hotel_id||null,
+        hotel_name:
+          cache.hotels.find(h=>h.id===x.hotel_id)?.name||null,
+        status:x.status,
+        reference:x.reference||'',
+        notes:x.notes||''
+      })
+      .eq('id',b.id);
+
+    if(r.error){
+      alert(r.error.message);
+      return;
+    }
+
+    /*
+      Save Client Payment.
+      We keep the payment table as the financial record.
+    */
+    const oldClientPaid=f.clientPaid||0;
+
+    if(clientPaid!==oldClientPaid){
+
+      const difference=clientPaid-oldClientPaid;
+
+      if(difference>0){
+
+        const payment=await sb
+          .from('client_payments')
+          .insert({
+            booking_id:b.id,
+            amount:difference,
+            payment_date:today(),
+            reference:'Booking payment entry',
+            notes:'Entered from booking screen',
+            created_by:me.id
+          });
+
+        if(payment.error){
+          alert(payment.error.message);
+          return;
+        }
+
+      }else if(difference<0){
+
+        const payments=await sb
+          .from('client_payments')
+          .select('*')
+          .eq('booking_id',b.id)
+          .order('payment_date',{ascending:false});
+
+        if(payments.error){
+          alert(payments.error.message);
+          return;
+        }
+
+        let remaining=Math.abs(difference);
+
+        for(const p of payments.data||[]){
+
+          if(remaining<=0) break;
+
+          const amount=Number(p.amount||0);
+
+          if(amount<=remaining){
+
+            const del=await sb
+              .from('client_payments')
+              .delete()
+              .eq('id',p.id);
+
+            if(del.error){
+              alert(del.error.message);
+              return;
+            }
+
+            remaining-=amount;
+
+          }else{
+
+            const upd=await sb
+              .from('client_payments')
+              .update({
+                amount:amount-remaining
+              })
+              .eq('id',p.id);
+
+            if(upd.error){
+              alert(upd.error.message);
+              return;
+            }
+
+            remaining=0;
+          }
+        }
+      }
+    }
+
+    /*
+      Save Supplier Payment.
+    */
+    const oldSupplierPaid=f.supplierPaid||0;
+
+    if(supplierPaid!==oldSupplierPaid){
+
+      const difference=supplierPaid-oldSupplierPaid;
+
+      if(difference>0){
+
+        const payment=await sb
+          .from('supplier_payments')
+          .insert({
+            booking_id:b.id,
+            amount:difference,
+            payment_date:today(),
+            reference:'Booking supplier payment',
+            notes:'Entered from booking screen',
+            created_by:me.id
+          });
+
+        if(payment.error){
+          alert(payment.error.message);
+          return;
+        }
+
+      }else if(difference<0){
+
+        const payments=await sb
+          .from('supplier_payments')
+          .select('*')
+          .eq('booking_id',b.id)
+          .order('payment_date',{ascending:false});
+
+        if(payments.error){
+          alert(payments.error.message);
+          return;
+        }
+
+        let remaining=Math.abs(difference);
+
+        for(const p of payments.data||[]){
+
+          if(remaining<=0) break;
+
+          const amount=Number(p.amount||0);
+
+          if(amount<=remaining){
+
+            const del=await sb
+              .from('supplier_payments')
+              .delete()
+              .eq('id',p.id);
+
+            if(del.error){
+              alert(del.error.message);
+              return;
+            }
+
+            remaining-=amount;
+
+          }else{
+
+            const upd=await sb
+              .from('supplier_payments')
+              .update({
+                amount:amount-remaining
+              })
+              .eq('id',p.id);
+
+            if(upd.error){
+              alert(upd.error.message);
+              return;
+            }
+
+            remaining=0;
+          }
+        }
+      }
+    }
+
+    /*
+      Synchronise Client, Quotation and Travel History.
+    */
+    await syncClientStatus(b.client_id,x.status);
+    await syncHistory(b.id);
+
+    await refresh();
+
+    closeModal();
+    go('bookings');
+
+    alert('Booking saved successfully.');
+  };
 }
 async function syncClientStatus(clientId,status){if(clientId){const r=await sb.from('clients').update({status}).eq('id',clientId);if(r.error&&isAdmin())console.warn(r.error.message)}const qid=cache.bookings.find(b=>b.client_id===clientId)?.quotation_id;if(qid&&isAdmin())await sb.from('quotations').update({status}).eq('id',qid)}
 async function syncHistory(bookingId){const b=bookingById(bookingId);if(!b)return;if(b.status!=='COMPLETED'){await sb.from('travel_history').delete().eq('booking_id',bookingId);return}const items=quoteItemsFor(b.quotation_id);const services=items.map(i=>i.service_name).filter(Boolean).join(', ');const supplier=[b.hotel_name,b.supplier_name].filter(Boolean).join(' · ');const r=await sb.from('travel_history').upsert({booking_id:b.id,client_id:b.client_id,destination:b.destination,departure:b.departure,return_date:b.return_date,services,hotel_supplier:supplier,travel_value:b.selling_amount||0,completed_date:b.return_date||today()},{onConflict:'booking_id'});if(r.error)alert(r.error.message)}
