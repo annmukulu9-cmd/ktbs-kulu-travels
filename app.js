@@ -272,17 +272,7 @@ async function editBooking(b){
     const supplierCost=Number(x.supplier_cost)||0;
     const supplierPaid=Number(x.supplier_paid)||0;
     const expenses=Number(x.other_expenses)||0;
-   let finalStatus=x.status;
-
-if(!['In Progress','COMPLETED','Cancelled'].includes(x.status)){
-  if(clientPaid<=0){
-    finalStatus=x.status==='Confirmed'?'Confirmed':'Quotation';
-  }else if(clientPaid<selling){
-    finalStatus='Partially Paid';
-  }else{
-    finalStatus='Fully Paid';
-  }
-}
+  
 
  
 
@@ -312,6 +302,14 @@ if(!['In Progress','COMPLETED','Cancelled'].includes(x.status)){
     const supplierCost=Number(x.supplier_cost)||0;
     const supplierPaid=Number(x.supplier_paid)||0;
     const expenses=Number(x.other_expenses)||0;
+   const finalStatus =
+  ['In Progress','COMPLETED','Cancelled'].includes(x.status)
+    ? x.status
+    : clientPaid<=0
+      ? (x.status==='Confirmed'?'Confirmed':'Quotation')
+      : clientPaid<selling
+        ? 'Partially Paid'
+        : 'Fully Paid';
 
     /*
       Save the main booking information.
