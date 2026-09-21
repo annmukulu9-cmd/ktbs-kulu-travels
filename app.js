@@ -272,7 +272,7 @@ async function editBooking(b){
     const supplierCost=Number(x.supplier_cost)||0;
     const supplierPaid=Number(x.supplier_paid)||0;
     const expenses=Number(x.other_expenses)||0;
-let finalStatus=x.status;
+   let finalStatus=x.status;
 
 if(!['In Progress','COMPLETED','Cancelled'].includes(x.status)){
   if(clientPaid<=0){
@@ -283,6 +283,7 @@ if(!['In Progress','COMPLETED','Cancelled'].includes(x.status)){
     finalStatus='Fully Paid';
   }
 }
+
  
 
     $('ebalance').textContent=
