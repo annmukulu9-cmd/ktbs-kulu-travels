@@ -537,7 +537,9 @@ function validateBookingStatus({requested,current,clientPaid,selling,supplierCos
   const hasClientPayment=paid>0;
   const fullyPaid=sale>0 && paid>=sale;
   const depositMet=deposit<=0 ? hasClientPayment : paid>=deposit;
-  const supplierReady=!!supplierId || Number(supplierCost||0)<=0;
+  const supplierReady=!!supplierId;
+const hotelReady=!!hotelId;
+const operationalReady=supplierReady || hotelReady || Number(supplierCost||0)<=0;
   const travelEnded=!!returnDate && String(returnDate)<=today();
 
   if(requested==='New Enquiry'){
@@ -620,13 +622,13 @@ function validateBookingStatus({requested,current,clientPaid,selling,supplierCos
       };
     }
 
-    if(!supplierReady){
-      return {
-        ok:false,
-        status:current,
-        message:'Cannot change to In Progress until the supplier is selected or supplier cost is zero.'
-      };
-    }
+   if(!operationalReady){
+  return {
+    ok:false,
+    status:current,
+    message:'Cannot change to In Progress until a supplier or hotel is selected.'
+  };
+}
 
     if(Number(supplierCost)>0 && Number(supplierPaid)<Number(supplierCost)){
       return {
@@ -636,13 +638,7 @@ function validateBookingStatus({requested,current,clientPaid,selling,supplierCos
       };
     }
 
-    if(!hotelId && Number(supplierCost)>0){
-      return {
-        ok:false,
-        status:current,
-        message:'Cannot change to In Progress until the hotel/accommodation is selected.'
-      };
-    }
+   
 
     return {ok:true,status:'In Progress'};
   }
