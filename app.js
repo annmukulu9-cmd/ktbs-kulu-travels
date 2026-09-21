@@ -9,7 +9,7 @@ const $=id=>document.getElementById(id);
 const money=n=>'KES '+Number(n||0).toLocaleString('en-KE');
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const today=()=>new Date().toISOString().slice(0,10);
-const isAdmin=()=>profile?.role==='admin';
+const isAdmin=()=>String(profile?.role||'').toLowerCase()==='admin';
 const profileName=id=>cache.profiles.find(p=>p.id===id)?.full_name||'—';
 const clientById=id=>cache.clients.find(c=>c.id===id);
 const quoteById=id=>cache.quotations.find(q=>q.id===id);
@@ -103,7 +103,7 @@ function bookingsPage(){$('content').innerHTML=`<div class="toolbar"><button cla
 function filterBookings(){$('bookingTable').innerHTML=bookingTable(999,$('bookingStatus').value)}
 function partnerOptions(list,selected){return list.map(x=>`<option value="${x.id}" ${x.id===selected?'selected':''}>${esc(x.name)}</option>`).join('')}
 async function savePartnerFromBooking(type){const name=($(type==='supplier'?'bookingSupplierNew':'bookingHotelNew')?.value||'').trim();if(!name)return alert(`Enter a ${type} name first.`);const table=type==='supplier'?'suppliers':'hotels';const exists=cache[table].find(x=>x.name.toLowerCase()===name.toLowerCase());if(exists){$(type==='supplier'?'bookingSupplierId':'bookingHotelId').value=exists.id;return}const payload=type==='supplier'?{name,type:'Travel Supplier',created_by:me.id}:{name,destination:'',created_by:me.id};const r=await sb.from(table).insert(payload).select().single();if(r.error)return alert(r.error.message);await loadData();$(type==='supplier'?'bookingSupplierId':'bookingHotelId').value=r.data.id;alert(`${type[0].toUpperCase()+type.slice(1)} saved to the master list.`)}
-async function openBooking(id){const b=bookingById(id);if(!b)return;if(!isAdmin())return alert('Saved bookings are locked for consultants. An administrator can edit this booking.');await editBooking(b)}
+async function openBooking(id){const b=bookingById(id);if(!b)return;await editBooking(b)}
 async function editBooking(b){
   const c=clientById(b.client_id);
   const f=financeForBooking(b);
