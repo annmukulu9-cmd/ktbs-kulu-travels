@@ -272,6 +272,18 @@ async function editBooking(b){
     const supplierCost=Number(x.supplier_cost)||0;
     const supplierPaid=Number(x.supplier_paid)||0;
     const expenses=Number(x.other_expenses)||0;
+let finalStatus=x.status;
+
+if(!['In Progress','COMPLETED','Cancelled'].includes(x.status)){
+  if(clientPaid<=0){
+    finalStatus=x.status==='Confirmed'?'Confirmed':'Quotation';
+  }else if(clientPaid<selling){
+    finalStatus='Partially Paid';
+  }else{
+    finalStatus='Fully Paid';
+  }
+}
+ 
 
     $('ebalance').textContent=
       money(selling-clientPaid);
@@ -315,7 +327,7 @@ async function editBooking(b){
         hotel_id:x.hotel_id||null,
         hotel_name:
           cache.hotels.find(h=>h.id===x.hotel_id)?.name||null,
-        status:x.status,
+        status:finalStatus,
         reference:x.reference||'',
         notes:x.notes||''
       })
@@ -494,7 +506,7 @@ async function editBooking(b){
     /*
       Synchronise Client, Quotation and Travel History.
     */
-    await syncClientStatus(b.client_id,x.status);
+    await syncClientStatus(b.client_id,finalStatus);
     await syncHistory(b.id);
 
     await refresh();
