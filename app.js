@@ -305,14 +305,25 @@ async function editBooking(b){
     const supplierCost=Number(x.supplier_cost)||0;
     const supplierPaid=Number(x.supplier_paid)||0;
     const expenses=Number(x.other_expenses)||0;
-   const finalStatus =
-  ['In Progress','COMPLETED','Cancelled'].includes(x.status)
-    ? x.status
-    : clientPaid<=0
-      ? (x.status==='Confirmed'?'Confirmed':'Quotation')
-      : clientPaid<selling
-        ? 'Partially Paid'
-        : 'Fully Paid';
+   const validation=validateBookingStatus({
+  requested:x.status,
+  current:b.status,
+  clientPaid,
+  selling,
+  supplierCost,
+  supplierPaid,
+  supplierId:x.supplier_id,
+  hotelId:x.hotel_id,
+  returnDate:b.return_date,
+  quotation:quoteById(b.quotation_id)
+});
+
+if(!validation.ok){
+  alert(validation.message);
+  return;
+}
+
+const finalStatus=validation.status;
 
     /*
       Save the main booking information.
@@ -518,6 +529,165 @@ async function editBooking(b){
 
     alert('Booking saved successfully.');
   };
+}
+function validateBookingStatus({requested,current,clientPaid,selling,supplierCost,supplierPaid,supplierId,hotelId,returnDate,quotation}){
+  const paid=Number(clientPaid)||0;
+  const sale=Number(selling)||0;
+  const deposit=Number(quotation?.deposit)||0;
+  const hasClientPayment=paid>0;
+  const fullyPaid=sale>0 && paid>=sale;
+  const depositMet=deposit<=0 ? hasClientPayment : paid>=deposit;
+  const supplierReady=!!supplierId || Number(supplierCost||0)<=0;
+  const travelEnded=!!returnDate && String(returnDate)<=today();
+
+  if(requested==='New Enquiry'){
+    return {
+      ok:false,
+      status:current,
+      message:'A booking cannot be moved back to New Enquiry. New Enquiry belongs to the enquiry stage before quotation/booking.'
+    };
+  }
+
+  if(requested==='Quotation'){
+    if(hasClientPayment){
+      return {
+        ok:false,
+        status:current,
+        message:'Quotation status is not allowed after a client payment has been received. KTBS will use Partially Paid or Fully Paid automatically.'
+      };
+    }
+    return {ok:true,status:'Quotation'};
+  }
+
+  if(requested==='Confirmed'){
+    if(!hasClientPayment){
+      return {
+        ok:false,
+        status:current,
+        message:'Cannot change to Confirmed until a client payment has been received.'
+      };
+    }
+
+    if(!depositMet){
+      return {
+        ok:false,
+        status:current,
+        message:'Cannot change to Confirmed yet. The required deposit has not been received.'
+      };
+    }
+
+    return {ok:true,status:'Confirmed'};
+  }
+
+  if(requested==='Partially Paid'){
+    if(!hasClientPayment){
+      return {
+        ok:false,
+        status:current,
+        message:'Partially Paid requires a client payment greater than KES 0.'
+      };
+    }
+
+    if(fullyPaid){
+      return {
+        ok:false,
+        status:current,
+        message:'The client has paid the full selling amount. KTBS will use Fully Paid automatically.'
+      };
+    }
+
+    return {ok:true,status:'Partially Paid'};
+  }
+
+  if(requested==='Fully Paid'){
+    if(!fullyPaid){
+      return {
+        ok:false,
+        status:current,
+        message:'Cannot change to Fully Paid until the client has paid the full selling amount.'
+      };
+    }
+
+    return {ok:true,status:'Fully Paid'};
+  }
+
+  if(requested==='In Progress'){
+    if(!fullyPaid){
+      return {
+        ok:false,
+        status:current,
+        message:'Cannot change to In Progress until the client has paid the full selling amount.'
+      };
+    }
+
+    if(!supplierReady){
+      return {
+        ok:false,
+        status:current,
+        message:'Cannot change to In Progress until the supplier is selected or supplier cost is zero.'
+      };
+    }
+
+    if(Number(supplierCost)>0 && Number(supplierPaid)<Number(supplierCost)){
+      return {
+        ok:false,
+        status:current,
+        message:'Cannot change to In Progress while a supplier balance is still outstanding.'
+      };
+    }
+
+    if(!hotelId && Number(supplierCost)>0){
+      return {
+        ok:false,
+        status:current,
+        message:'Cannot change to In Progress until the hotel/accommodation is selected.'
+      };
+    }
+
+    return {ok:true,status:'In Progress'};
+  }
+
+  if(requested==='COMPLETED'){
+    if(!fullyPaid){
+      return {
+        ok:false,
+        status:current,
+        message:'Cannot mark a booking COMPLETED until the client has paid the full selling amount.'
+      };
+    }
+
+    if(!travelEnded){
+      return {
+        ok:false,
+        status:current,
+        message:'Cannot mark a booking COMPLETED before its return date.'
+      };
+    }
+
+    return {ok:true,status:'COMPLETED'};
+  }
+
+  if(requested==='Cancelled'){
+    if(!isAdmin()){
+      return {
+        ok:false,
+        status:current,
+        message:'Only an administrator can cancel a booking.'
+      };
+    }
+
+    if(!confirm('Cancel this booking?')){
+      return {
+        ok:false,
+        status:current,
+        message:'Cancellation was not confirmed.'
+      };
+    }
+
+    return {ok:true,status:'Cancelled'};
+  }
+
+  return {ok:true,status:current||'Quotation'};
 }
 async function syncClientStatus(clientId,status){if(clientId){const r=await sb.from('clients').update({status}).eq('id',clientId);if(r.error&&isAdmin())console.warn(r.error.message)}const qid=cache.bookings.find(b=>b.client_id===clientId)?.quotation_id;if(qid&&isAdmin())await sb.from('quotations').update({status}).eq('id',qid)}
 async function syncHistory(bookingId){const b=bookingById(bookingId);if(!b)return;if(b.status!=='COMPLETED'){await sb.from('travel_history').delete().eq('booking_id',bookingId);return}const items=quoteItemsFor(b.quotation_id);const services=items.map(i=>i.service_name).filter(Boolean).join(', ');const supplier=[b.hotel_name,b.supplier_name].filter(Boolean).join(' · ');const r=await sb.from('travel_history').upsert({booking_id:b.id,client_id:b.client_id,destination:b.destination,departure:b.departure,return_date:b.return_date,services,hotel_supplier:supplier,travel_value:b.selling_amount||0,completed_date:b.return_date||today()},{onConflict:'booking_id'});if(r.error)alert(r.error.message)}
