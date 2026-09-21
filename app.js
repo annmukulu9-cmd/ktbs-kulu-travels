@@ -685,7 +685,28 @@ const operationalReady=supplierReady || hotelReady || Number(supplierCost||0)<=0
 
   return {ok:true,status:current||'Quotation'};
 }
-async function syncClientStatus(clientId,status){if(clientId){const r=await sb.from('clients').update({status}).eq('id',clientId);if(r.error&&isAdmin())console.warn(r.error.message)}const qid=cache.bookings.find(b=>b.client_id===clientId)?.quotation_id;if(qid&&isAdmin())await sb.from('quotations').update({status}).eq('id',qid)}
+async function syncClientStatus(clientId,status){
+  if(!clientId)return;
+
+  const r=await sb
+    .from('clients')
+    .update({status})
+    .eq('id',clientId);
+
+  if(r.error)console.warn(r.error.message);
+
+  const booking=cache.bookings.find(b=>b.client_id===clientId);
+  const qid=booking?.quotation_id;
+
+  if(qid){
+    const q=await sb
+      .from('quotations')
+      .update({status})
+      .eq('id',qid);
+
+    if(q.error)console.warn(q.error.message);
+  }
+}
 async function syncHistory(bookingId){const b=bookingById(bookingId);if(!b)return;if(b.status!=='COMPLETED'){await sb.from('travel_history').delete().eq('booking_id',bookingId);return}const items=quoteItemsFor(b.quotation_id);const services=items.map(i=>i.service_name).filter(Boolean).join(', ');const supplier=[b.hotel_name,b.supplier_name].filter(Boolean).join(' · ');const r=await sb.from('travel_history').upsert({booking_id:b.id,client_id:b.client_id,destination:b.destination,departure:b.departure,return_date:b.return_date,services,hotel_supplier:supplier,travel_value:b.selling_amount||0,completed_date:b.return_date||today()},{onConflict:'booking_id'});if(r.error)alert(r.error.message)}
 async function newBooking(){if(!cache.quotations.length)return alert('Create a quotation first.');const qs=cache.quotations.map(q=>{const c=clientById(q.client_id);return `<option value="${q.id}">${esc(q.quotation_no)} — ${esc(c?.name||'')}</option>`}).join('');openModal('New Booking',`<form id="bForm"><div class="form-grid"><label>Quotation<select name="quotation_id">${qs}</select></label><label>Status<select name="status">${STATUS.map(x=>`<option>${x}</option>`).join('')}</select></label><label>Selling Amount<input type="number" name="selling_amount" required></label><label>Supplier Cost<input type="number" name="supplier_cost" value="0"></label><label>Other Expenses<input type="number" name="other_expenses" value="0"></label><label>Supplier<select name="supplier_id"><option value="">Select supplier…</option>${partnerOptions(cache.suppliers,'')}</select></label><label>Hotel<select name="hotel_id"><option value="">Select hotel…</option>${partnerOptions(cache.hotels,'')}</select></label><label>Booking Reference<input name="reference"></label><label class="wide">Notes<textarea name="notes"></textarea></label></div><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Booking</button></div></form>`);$('bForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),q=quoteById(f.quotation_id);if(!q)return;const c=clientById(q.client_id),bno=await nextDoc('BK','bookings','booking_no');const sup=cache.suppliers.find(s=>s.id===f.supplier_id),hot=cache.hotels.find(h=>h.id===f.hotel_id);const r=await sb.from('bookings').insert({booking_no:bno,quotation_id:q.id,client_id:c.id,consultant_id:q.consultant_id||me.id,destination:q.destination,departure:q.departure,return_date:q.return_date,supplier_id:f.supplier_id||null,supplier_name:sup?.name||null,hotel_id:f.hotel_id||null,hotel_name:hot?.name||null,status:f.status,selling_amount:+f.selling_amount||0,supplier_cost:+f.supplier_cost||0,other_expenses:+f.other_expenses||0,reference:f.reference||'',notes:f.notes||'',booking_date:today(),created_by:me.id});if(r.error)return alert(r.error.message);if(isAdmin()){await sb.from('clients').update({status:f.status}).eq('id',c.id);await sb.from('quotations').update({status:f.status}).eq('id',q.id)}await refresh();closeModal();go('bookings')}
 }
