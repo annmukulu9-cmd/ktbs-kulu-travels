@@ -318,6 +318,29 @@ async function editBooking(b){
   quotation:quoteById(b.quotation_id)
 });
 
+const paymentStatus =
+  selling>0
+    ? (clientPaid<=0 ? 'Quotation' : clientPaid>=selling ? 'Fully Paid' : 'Partially Paid')
+    : (clientPaid>0 ? 'Partially Paid' : 'Quotation');
+
+const requestedStatus =
+  ['Quotation','Partially Paid','Fully Paid'].includes(f.status)
+    ? paymentStatus
+    : f.status;
+
+const validation=validateBookingStatus({
+  requested:requestedStatus,
+  current:b.status,
+  clientPaid,
+  selling,
+  supplierCost,
+  supplierPaid,
+  supplierId:x.supplier_id,
+  hotelId:x.hotel_id,
+  returnDate:b.return_date,
+  quotation:quoteById(b.quotation_id)
+});
+
 if(!validation.ok){
   alert(validation.message);
   return;
