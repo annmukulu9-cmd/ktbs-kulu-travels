@@ -61,8 +61,84 @@ function clientTable(arr=cache.clients){
 function clientsPage(){$('content').innerHTML=`<div class="toolbar"><input id="clientFilter" placeholder="Search client name, ID, phone or destination…" oninput="filterClient()"><button class="primary" onclick="newClient()">+ New Client</button></div>${tableWrap(`<div id="clientTable">${clientTable()}</div>`)}`}
 function filterClient(){const v=($('clientFilter')?.value||'').toLowerCase();$('clientTable').innerHTML=clientTable(cache.clients.filter(c=>Object.values(c).join(' ').toLowerCase().includes(v)))}
 
-async function openClient(id){const c=clientById(id);if(!c)return;const hs=cache.history.filter(h=>h.client_id===id).sort((a,b)=>String(b.departure||'').localeCompare(String(a.departure||'')));const bs=cache.bookings.filter(b=>b.client_id===id);const spend=hs.reduce((n,h)=>n+Number(h.travel_value||0),0);openModal('Client Profile',`<div class="card" style="box-shadow:none"><div class="kicker">${esc(c.client_code||'')}</div><h2>${esc(c.name)}</h2><p>${esc(c.phone||'')} · ${esc(c.email||'')}</p><div class="form-grid"><div><b>Trips with Kulu</b><div class="big-number">${hs.length}</div></div><div><b>Total Travel Value</b><div class="big-number">${money(spend)}</div></div><div><b>Last Destination</b><div>${esc(hs[0]?.destination||'—')}</div></div></div></div><div class="page-card"><h3>Travel History</h3>${hs.length?historyTable('',hs):'<p>No completed Kulu journeys yet. Completed bookings appear here automatically.</p>'}</div><div class="page-card"><h3>Current Kulu Activity</h3><p>Bookings: <b>${bs.length}</b></p></div>${isAdmin()?`<div class="actions"><button onclick="editClient('${id}')">Edit Client</button><button onclick="deleteClient('${id}')">Delete Client</button></div>`:''}`)}
+async function openClient(id){
+  const c=clientById(id);
+  if(!c)return;
 
+  const hs=cache.history
+    .filter(h=>h.client_id===id)
+    .sort((a,b)=>String(b.departure||'').localeCompare(String(a.departure||'')));
+
+  const bs=cache.bookings.filter(b=>b.client_id===id);
+
+  const financials=bs.map(financeForBooking);
+
+  const paidToKulu=financials.reduce((n,f)=>n+Number(f.clientPaid||0),0);
+
+  const bookedValue=financials.reduce((n,f)=>n+Number(f.selling||0),0);
+
+  const outstandingBalance=financials.reduce((n,f)=>n+Number(f.balance||0),0);
+
+  openModal('Client Profile',`
+    <div class="card" style="box-shadow:none">
+      <div class="kicker">${esc(c.client_code||'')}</div>
+
+      <h2>${esc(c.name)}</h2>
+
+      <p>${esc(c.phone||'')} · ${esc(c.email||'')}</p>
+
+      <div class="form-grid">
+
+        <div>
+          <b>Trips with Kulu</b>
+          <div class="big-number">${hs.length}</div>
+        </div>
+
+        <div>
+          <b>Paid to Kulu</b>
+          <div class="big-number">${money(paidToKulu)}</div>
+        </div>
+
+        <div>
+          <b>Booked Value</b>
+          <div class="big-number">${money(bookedValue)}</div>
+        </div>
+
+        <div>
+          <b>Outstanding Balance</b>
+          <div class="big-number">${money(outstandingBalance)}</div>
+        </div>
+
+        <div>
+          <b>Last Destination</b>
+          <div>${esc(hs[0]?.destination||'—')}</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="page-card">
+      <h3>Travel History</h3>
+      ${hs.length
+        ? historyTable('',hs)
+        : '<p>No completed Kulu journeys yet. Completed bookings appear here automatically.</p>'
+      }
+    </div>
+
+    <div class="page-card">
+      <h3>Current Kulu Activity</h3>
+      <p>Bookings: <b>${bs.length}</b></p>
+    </div>
+
+    ${isAdmin()
+      ? `<div class="actions">
+          <button onclick="editClient('${id}')">Edit Client</button>
+          <button onclick="deleteClient('${id}')">Delete Client</button>
+        </div>`
+      : ''
+    }
+  `);
+}
 async function nextClientCode(){const rows=await q('clients','client_code');let max=0;rows.forEach(x=>{const m=String(x.client_code||'').match(/(\d+)$/);if(m)max=Math.max(max,+m[1])});return 'CL'+String(max+1).padStart(6,'0')}
 async function nextDoc(prefix,table,col){const rows=await q(table,col);let max=0;rows.forEach(x=>{const m=String(x[col]||'').match(/(\d+)$/);if(m)max=Math.max(max,+m[1])});const ym=new Date().toISOString().slice(2,7).replace('-','');return `${prefix}/${ym}/${String(max+1).padStart(3,'0')}`}
 
