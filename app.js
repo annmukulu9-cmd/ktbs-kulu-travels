@@ -795,7 +795,62 @@ async function syncClientStatus(clientId,status){
     if(q.error)console.warn(q.error.message);
   }
 }
-async function syncHistory(bookingId){const b=bookingById(bookingId);if(!b)return;if(b.status!=='COMPLETED'){await sb.from('travel_history').delete().eq('booking_id',bookingId);return}const items=quoteItemsFor(b.quotation_id);const services=items.map(i=>i.service_name).filter(Boolean).join(', ');const supplier=[b.hotel_name,b.supplier_name].filter(Boolean).join(' · ');const r=await sb.from('travel_history').upsert({booking_id:b.id,client_id:b.client_id,destination:b.destination,departure:b.departure,return_date:b.return_date,services,hotel_supplier:supplier,travel_value:b.selling_amount||0,completed_date:b.return_date||today()},{onConflict:'booking_id'});if(r.error)alert(r.error.message)}
+async function syncHistory(bookingId){
+  const fresh=await sb
+    .from('bookings')
+    .select('*')
+    .eq('id',bookingId)
+    .maybeSingle();
+
+  if(fresh.error){
+    console.warn(fresh.error.message);
+    return;
+  }
+
+  const b=fresh.data;
+  if(!b)return;
+
+  if(b.status!=='COMPLETED'){
+    const d=await sb
+      .from('travel_history')
+      .delete()
+      .eq('booking_id',bookingId);
+
+    if(d.error)console.warn(d.error.message);
+    return;
+  }
+
+  const items=cache.quotation_items
+    .filter(i=>i.quotation_id===b.quotation_id);
+
+  const services=items
+    .map(i=>i.service_name)
+    .filter(Boolean)
+    .join(', ');
+
+  const supplier=[
+    b.hotel_name,
+    b.supplier_name
+  ].filter(Boolean).join(' · ');
+
+  const r=await sb
+    .from('travel_history')
+    .upsert({
+      booking_id:b.id,
+      client_id:b.client_id,
+      destination:b.destination,
+      departure:b.departure,
+      return_date:b.return_date,
+      services,
+      hotel_supplier:supplier,
+      travel_value:b.selling_amount||0,
+      completed_date:b.return_date||today()
+    },{
+      onConflict:'booking_id'
+    });
+
+  if(r.error)alert(r.error.message);
+}
 async function newBooking(){if(!cache.quotations.length)return alert('Create a quotation first.');const qs=cache.quotations.map(q=>{const c=clientById(q.client_id);return `<option value="${q.id}">${esc(q.quotation_no)} — ${esc(c?.name||'')}</option>`}).join('');openModal('New Booking',`<form id="bForm"><div class="form-grid"><label>Quotation<select name="quotation_id">${qs}</select></label><label>
   Booking Status
   <input value="Quotation" readonly>
