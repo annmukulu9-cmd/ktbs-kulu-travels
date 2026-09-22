@@ -607,7 +607,7 @@ const finalStatus=validation.status;
     /*
       Synchronise Client, Quotation and Travel History.
     */
-    await syncClientStatus(b.client_id,finalStatus);
+    await syncClientStatus(b.client_id,finalStatus,b.quotation_id);
     await syncHistory(b.id);
 
     await refresh();
@@ -773,27 +773,18 @@ const operationalReady=supplierReady || hotelReady || Number(supplierCost||0)<=0
 
   return {ok:true,status:current||'Quotation'};
 }
-async function syncClientStatus(clientId,status){
+async function syncClientStatus(clientId,status,quotationId=null){
   if(!clientId)return;
 
-  const r=await sb
-    .from('clients')
-    .update({status})
-    .eq('id',clientId);
+  const qid=quotationId||cache.bookings.find(b=>b.client_id===clientId)?.quotation_id;
+
+  const r=await sb.rpc('sync_booking_status',{
+    p_client_id:clientId,
+    p_quotation_id:qid||null,
+    p_status:status
+  });
 
   if(r.error)console.warn(r.error.message);
-
-  const booking=cache.bookings.find(b=>b.client_id===clientId);
-  const qid=booking?.quotation_id;
-
-  if(qid){
-    const q=await sb
-      .from('quotations')
-      .update({status})
-      .eq('id',qid);
-
-    if(q.error)console.warn(q.error.message);
-  }
 }
 async function syncHistory(bookingId){
   const fresh=await sb
