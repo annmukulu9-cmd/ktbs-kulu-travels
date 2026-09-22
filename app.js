@@ -305,18 +305,7 @@ async function editBooking(b){
     const supplierCost=Number(x.supplier_cost)||0;
     const supplierPaid=Number(x.supplier_paid)||0;
     const expenses=Number(x.other_expenses)||0;
-   const validation=validateBookingStatus({
-  requested:x.status,
-  current:b.status,
-  clientPaid,
-  selling,
-  supplierCost,
-  supplierPaid,
-  supplierId:x.supplier_id,
-  hotelId:x.hotel_id,
-  returnDate:b.return_date,
-  quotation:quoteById(b.quotation_id)
-});
+  
 
 const paymentStatus =
   selling>0
