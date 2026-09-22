@@ -313,9 +313,9 @@ const paymentStatus =
     : (clientPaid>0 ? 'Partially Paid' : 'Quotation');
 
 const requestedStatus =
-  ['Quotation','Partially Paid','Fully Paid'].includes(f.status)
+  ['Quotation','Partially Paid','Fully Paid'].includes(x.status)
     ? paymentStatus
-    : f.status;
+    : x.status;
 
 const validation=validateBookingStatus({
   requested:requestedStatus,
