@@ -607,8 +607,15 @@ const finalStatus=validation.status;
     /*
       Synchronise Client, Quotation and Travel History.
     */
-    await syncClientStatus(b.client_id,finalStatus,b.quotation_id);
-    await syncHistory(b.id);
+   const sync=await syncClientStatus(b.client_id,finalStatus,b.quotation_id);
+
+if(!sync.ok){
+  alert('Booking was saved, but Client Master and Quotation status could not be synchronized. Please retry.\n\n'+(sync.error?.message||'Unknown synchronization error'));
+  await refresh();
+  return;
+}
+
+await syncHistory(b.id);
 
     await refresh();
 
@@ -774,7 +781,7 @@ const operationalReady=supplierReady || hotelReady || Number(supplierCost||0)<=0
   return {ok:true,status:current||'Quotation'};
 }
 async function syncClientStatus(clientId,status,quotationId=null){
-  if(!clientId)return;
+  if(!clientId)return {ok:true};
 
   const qid=quotationId||cache.bookings.find(b=>b.client_id===clientId)?.quotation_id;
 
@@ -784,7 +791,12 @@ async function syncClientStatus(clientId,status,quotationId=null){
     p_status:status
   });
 
-  if(r.error)console.warn(r.error.message);
+  if(r.error){
+    console.error('Status sync failed:',r.error);
+    return {ok:false,error:r.error};
+  }
+
+  return {ok:true,data:r.data};
 }
 async function syncHistory(bookingId){
   const fresh=await sb
@@ -846,7 +858,13 @@ async function newBooking(){if(!cache.quotations.length)return alert('Create a q
   Booking Status
   <input value="Quotation" readonly>
   <input type="hidden" name="status" value="Quotation">
-</label><label>Selling Amount<input type="number" name="selling_amount" required></label><label>Supplier Cost<input type="number" name="supplier_cost" value="0"></label><label>Other Expenses<input type="number" name="other_expenses" value="0"></label><label>Supplier<select name="supplier_id"><option value="">Select supplier…</option>${partnerOptions(cache.suppliers,'')}</select></label><label>Hotel<select name="hotel_id"><option value="">Select hotel…</option>${partnerOptions(cache.hotels,'')}</select></label><label>Booking Reference<input name="reference"></label><label class="wide">Notes<textarea name="notes"></textarea></label></div><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Booking</button></div></form>`);$('bForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),q=quoteById(f.quotation_id);if(!q)return;const c=clientById(q.client_id),bno=await nextDoc('BK','bookings','booking_no');const sup=cache.suppliers.find(s=>s.id===f.supplier_id),hot=cache.hotels.find(h=>h.id===f.hotel_id);const r=await sb.from('bookings').insert({booking_no:bno,quotation_id:q.id,client_id:c.id,consultant_id:q.consultant_id||me.id,destination:q.destination,departure:q.departure,return_date:q.return_date,supplier_id:f.supplier_id||null,supplier_name:sup?.name||null,hotel_id:f.hotel_id||null,hotel_name:hot?.name||null,status:f.status,selling_amount:+f.selling_amount||0,supplier_cost:+f.supplier_cost||0,other_expenses:+f.other_expenses||0,reference:f.reference||'',notes:f.notes||'',booking_date:today(),created_by:me.id});if(r.error)return alert(r.error.message);if(isAdmin()){await sb.from('clients').update({status:f.status}).eq('id',c.id);await sb.from('quotations').update({status:f.status}).eq('id',q.id)}await refresh();closeModal();go('bookings')}
+</label><label>Selling Amount<input type="number" name="selling_amount" required></label><label>Supplier Cost<input type="number" name="supplier_cost" value="0"></label><label>Other Expenses<input type="number" name="other_expenses" value="0"></label><label>Supplier<select name="supplier_id"><option value="">Select supplier…</option>${partnerOptions(cache.suppliers,'')}</select></label><label>Hotel<select name="hotel_id"><option value="">Select hotel…</option>${partnerOptions(cache.hotels,'')}</select></label><label>Booking Reference<input name="reference"></label><label class="wide">Notes<textarea name="notes"></textarea></label></div><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Booking</button></div></form>`);$('bForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),q=quoteById(f.quotation_id);if(!q)return;const c=clientById(q.client_id),bno=await nextDoc('BK','bookings','booking_no');const sup=cache.suppliers.find(s=>s.id===f.supplier_id),hot=cache.hotels.find(h=>h.id===f.hotel_id);const r=await sb.from('bookings').insert({booking_no:bno,quotation_id:q.id,client_id:c.id,consultant_id:q.consultant_id||me.id,destination:q.destination,departure:q.departure,return_date:q.return_date,supplier_id:f.supplier_id||null,supplier_name:sup?.name||null,hotel_id:f.hotel_id||null,hotel_name:hot?.name||null,status:f.status,selling_amount:+f.selling_amount||0,supplier_cost:+f.supplier_cost||0,other_expenses:+f.other_expenses||0,reference:f.reference||'',notes:f.notes||'',booking_date:today(),created_by:me.id});if(r.error)return alert(r.error.message);if(isAdmin()){const sync=await syncClientStatus(c.id,f.status,q.id);
+
+if(!sync.ok){
+  alert('Booking was created, but Client Master and Quotation status could not be synchronized. Please retry.\n\n'+(sync.error?.message||'Unknown synchronization error'));
+  await refresh();
+  return;
+}}await refresh();closeModal();go('bookings')}
 }
 
 function suppliersPage(){$('content').innerHTML=`<div class="toolbar"><button class="primary" onclick="newSupplier()">+ New Supplier</button></div>${tableWrap(cache.suppliers.length?`<table><thead><tr><th>Supplier</th><th>Contact</th><th>Type</th><th></th></tr></thead><tbody>${cache.suppliers.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.contact||'')}</td><td>${esc(s.type||'')}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('suppliers','${s.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No supplier records yet.</div>')}`}
