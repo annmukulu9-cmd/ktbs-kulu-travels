@@ -170,7 +170,21 @@ async function newClient(existing=null){
  $('clientForm').onsubmit=async e=>{e.preventDefault();if(existing&&!isAdmin())return alert('Only an administrator can edit saved clients.');const f=Object.fromEntries(new FormData(e.target));const payload={...f,departure:f.departure||null,return_date:f.return_date||null,adults:+f.adults||1,children:+f.children||0,budget:+f.budget||0,consultant_id:f.consultant_id||null,updated_by:me.id};if(existing){const r=await sb.from('clients').update(payload).eq('id',existing.id);if(r.error)return alert(r.error.message)}else{payload.client_code=await nextClientCode();payload.created_by=me.id;const r=await sb.from('clients').insert(payload);if(r.error)return alert(r.error.message)}await refresh();closeModal();go('clients')}
 }
 function editClient(id){const c=clientById(id);if(c)newClient(c)}
-async function deleteClient(id){if(!isAdmin())return alert('Only an administrator can delete clients.');if(!confirm('Delete this client? This is permanent.'))return;const r=await sb.from('clients').delete().eq('id',id);if(r.error)return alert(r.error.message);await refresh();closeModal();go('clients')}
+async function deleteClient(id){
+  if(!isAdmin())return alert('Only an administrator can delete clients.');
+
+  if(!confirm('Delete this client and all related quotations, bookings, payments, expenses and travel history? This action is permanent.'))return;
+
+  const r=await sb.rpc('admin_delete_client',{
+    p_client_id:id
+  });
+
+  if(r.error)return alert(r.error.message);
+
+  await refresh();
+  closeModal();
+  go('clients');
+}
 
 function quotationTable(){return `<table><thead><tr><th>Quotation</th><th>Client</th><th>Destination</th><th>Consultant</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>${cache.quotations.map(q=>{const c=clientById(q.client_id);return `<tr><td><b>${esc(q.quotation_no)}</b><br><small>${q.date||''}</small></td><td>${esc(c?.name||'—')}</td><td>${esc(q.destination||'')}</td><td>${esc(profileName(q.consultant_id))}</td><td>${money(q.total)}</td><td>${badge(q.status)}</td><td><button class="link-btn" onclick="openQuotation('${q.id}')">Open</button></td></tr>`}).join('')}</tbody></table>`}
 function quotationsPage(){$('content').innerHTML=`<div class="toolbar"><button class="primary" onclick="newQuotation()">+ New Quotation</button></div>${tableWrap(quotationTable())}`}
