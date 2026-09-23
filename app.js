@@ -241,7 +241,7 @@ function openQuotation(id){
 }
 function editQuotation(id){openQuotation(id)}
 
-function bookingTable(n=999,status=''){const arr=cache.bookings.filter(b=>!status||b.status===status);return `<table><thead><tr><th>Booking</th><th>Client / ID</th><th>Destination</th><th>Travel Date</th><th>Selling</th><th>Client Paid</th><th>Balance</th><th>Supplier Cost</th><th>Supplier Paid</th><th>Supplier Pending</th><th>Gross Profit</th>
+function bookingTable(n=999,status=''){const arr=cache.bookings.filter(b=>!status||b.status===status);return `<table class="booking-table"><thead><tr><th>Booking</th><th>Client / ID</th><th>Destination</th><th>Travel Date</th><th>Selling</th><th>Client Paid</th><th>Balance</th><th>Supplier Cost</th><th>Supplier Paid</th><th>Supplier Pending</th><th>Gross Profit</th>
 <th>Net Profit</th>
 <th>Consultant</th>
 <th>Booking Status</th>
