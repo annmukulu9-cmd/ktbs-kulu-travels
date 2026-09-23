@@ -198,7 +198,7 @@ tr:last-child td{
       rgba(255,255,255,.15) 72%,
       rgba(255,255,255,.02) 100%
     ),
-    url('/assets/kulu-luxury-hero.png') center center / cover no-repeat;
+    url('/kulu-luxury-hero.png') center center / cover no-repeat;
   border:1px solid #dceff2;
   overflow:hidden;
   position:relative;
