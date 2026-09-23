@@ -442,6 +442,7 @@ const finalStatus=validation.status;
         selling_amount:selling,
         supplier_cost:supplierCost,
         other_expenses:expenses,
+        updated_by:me.id,
         supplier_id:x.supplier_id||null,
         supplier_name:
           cache.suppliers.find(s=>s.id===x.supplier_id)?.name||null,
