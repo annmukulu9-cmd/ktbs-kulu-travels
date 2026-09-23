@@ -26,7 +26,12 @@ async function loadData(){
  const [clients,quotations,quotation_items,bookings,suppliers,hotels,services,history,expenses,payments,supplierPayments]=await Promise.all([
   q('clients'),q('quotations'),q('quotation_items'),q('bookings'),q('suppliers'),q('hotels'),q('services'),q('travel_history'),q('expenses'),q('client_payments'),q('supplier_payments')
  ]);
- let profiles=[]; if(isAdmin()){try{profiles=await q('profiles')}catch(e){profiles=[]}} else if(me){const r=await sb.from('profiles').select('*').eq('id',me.id).maybeSingle();if(r.data)profiles=[r.data]}
+ let profiles=[];
+try{
+  profiles=await q('profiles');
+}catch(e){
+  profiles=[];
+}
  cache={clients,quotations,quotation_items,bookings,suppliers,hotels,services,history,expenses,payments,supplierPayments,profiles};
 }
 async function refresh(){await loadData();render()}
