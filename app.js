@@ -882,8 +882,139 @@ async function recordSupplierPayment(){if(!cache.bookings.length)return alert('N
 function historyTable(filter='',arr=cache.history){const f=String(filter||'').toLowerCase(),a=arr.filter(h=>!f||[h.destination,h.services,h.hotel_supplier].join(' ').toLowerCase().includes(f));return `<table class="booking-table"><thead><tr><th>Client</th><th>Destination</th><th>Travel Date</th><th>Experiences / Services</th><th>Hotel / Supplier</th><th>Booking</th><th>Value</th></tr></thead><tbody>${a.map(h=>`<tr><td><b>${esc(clientById(h.client_id)?.name||'—')}</b><br><small>${esc(clientById(h.client_id)?.client_code||'')}</small></td><td>${esc(h.destination||'—')}</td><td>${esc(h.departure||'—')}</td><td>${esc(h.services||'—')}</td><td>${esc(h.hotel_supplier||'—')}</td><td>${esc(bookingById(h.booking_id)?.booking_no||'—')}</td><td>${money(h.travel_value)}</td></tr>`).join('')}</tbody></table>`}
 function historyPage(){$('content').innerHTML=`<div class="toolbar"><input placeholder="Search client, destination or experience…" oninput="$('historyTable').innerHTML=historyTable(this.value)"></div>${tableWrap(`<div id="historyTable">${historyTable()}</div>`)}`}
 function reportsPage(){const rows=cache.bookings.map(financeForBooking),gp=rows.reduce((a,b)=>a+b.gross,0),np=rows.reduce((a,b)=>a+b.net,0);$('content').innerHTML=`<div class="grid stats">${stat('Clients',cache.clients.length,'Master records')}${stat('Quotations',cache.quotations.length,'Live quotations')}${stat('Bookings',cache.bookings.length,'Live bookings')}${stat('Completed Trips',cache.bookings.filter(b=>b.status==='COMPLETED').length,'Feeds travel history')}${stat('Gross Profit',money(gp),'All bookings')}${stat('Net Profit',money(np),'All bookings')}</div>${tableWrap(`<h3>Consultant Activity</h3>${[...new Set(cache.bookings.map(b=>profileName(b.consultant_id)).filter(x=>x!=='—'))].map(n=>`<p><b>${esc(n)}</b>: ${cache.bookings.filter(b=>profileName(b.consultant_id)===n).length} booking(s)</p>`).join('')||'<p>No booking activity yet.</p>'}`)}`}
-function settingsPage(){$('content').innerHTML=`<div class="page-grid"><div class="page-card"><h3>Current User</h3><p><b>${esc(profile?.full_name||'')}</b><br>${esc(me?.email||'')}<br>${badge(profile?.role?.toUpperCase())}</p></div><div class="page-card"><h3>Permissions</h3><p>Consultants can create records but cannot edit or delete saved records.</p><p>Administrators can edit/delete records and manage master data.</p></div><div class="page-card"><h3>Staff Accounts</h3><p>Login accounts are managed by Supabase Authentication. KTBS profiles store staff roles.</p>${isAdmin()?`<button class="primary" onclick="showStaff()">View Staff & Roles</button>`:'<p>Admin only.</p>'}</div></div>`}
-async function showStaff(){const rows=await q('profiles');openModal('KTBS Staff & Roles',`<table><thead><tr><th>Name</th><th>Role</th><th>Active</th><th>Action</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.full_name||'')}</td><td>${esc(x.role)}</td><td>${x.active?'Yes':'No'}</td><td><button class="link-btn" onclick="changeRole('${x.id}','${x.role==='admin'?'consultant':'admin'}')">Make ${x.role==='admin'?'Consultant':'Admin'}</button></td></tr>`).join('')}</tbody></table><p class="muted">To create a brand-new login account, use Supabase Authentication → Users → Invite user. The profile will appear here after the account is created.</p>`)}
+function settingsPage(){$('content').innerHTML=`<div class="page-grid"><div class="page-card"><h3>Current User</h3><p><b>${esc(profile?.full_name||'')}</b><br>${esc(me?.email||'')}<br>${badge(profile?.role?.toUpperCase())}</p></div><div class="page-card"><h3>Permissions</h3><p>
+  Consultants can create clients, quotations and operational records.
+  Saved client and quotation records are protected from consultant
+  editing and deletion. Booking updates remain available to consultants
+  for day-to-day operations.
+</p>
+
+<p>
+  Administrators have full management access, including staff accounts,
+  master data, client records and quotation records.
+</p></div><div class="page-card"><h3>Staff Accounts</h3><p>Login accounts are managed by Supabase Authentication. KTBS profiles store staff roles.</p>${isAdmin()?`<button class="primary" onclick="showStaff()">View Staff & Roles</button>`:'<p>Admin only.</p>'}</div></div>`}
+ async function showStaff(){
+  const rows=await q('profiles');
+
+  openModal('KTBS Staff & Roles',`
+    <div class="page-card">
+      <div class="section-head">
+        <div>
+          <h3>Staff Accounts</h3>
+          <p class="muted">
+            Manage consultant and administrator access to KTBS.
+          </p>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Staff Member</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Access</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${rows.map(x=>`
+            <tr>
+              <td>
+                <b>${esc(x.full_name||'')}</b>
+                ${x.id===me?.id
+                  ? '<br><small>Current user</small>'
+                  : ''
+                }
+              </td>
+
+              <td>
+                ${badge(String(x.role||'').toUpperCase())}
+              </td>
+
+              <td>
+                ${x.active
+                  ? '<span class="badge info">ACTIVE</span>'
+                  : '<span class="badge red">INACTIVE</span>'
+                }
+              </td>
+
+              <td>
+                <div class="actions">
+
+                  <button
+                    class="link-btn"
+                    onclick="changeRole(
+                      '${x.id}',
+                      '${x.role==='admin'?'consultant':'admin'}'
+                    )">
+                    Make ${x.role==='admin'?'Consultant':'Admin'}
+                  </button>
+
+                  ${x.id!==me?.id
+                    ? `
+                      <button
+                        class="link-btn"
+                        onclick="toggleStaffStatus(
+                          '${x.id}',
+                          ${x.active}
+                        )">
+                        ${x.active?'Deactivate':'Activate'}
+                      </button>
+                    `
+                    : ''
+                  }
+
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <div class="page-card" style="margin-top:16px">
+        <h4>New Staff Account</h4>
+
+        <p>
+          New login accounts are created through
+          <b>Supabase Authentication → Users → Invite user</b>.
+          After the account is created, add its KTBS profile and assign
+          the appropriate role.
+        </p>
+
+        <p class="muted">
+          Deactivated staff remain in the system and their existing
+          client, quotation and booking records are preserved.
+        </p>
+      </div>
+    </div>
+  `);
+}
+async function toggleStaffStatus(id,current){
+  if(!isAdmin())return;
+
+  if(id===me?.id){
+    return alert('You cannot deactivate your own administrator account.');
+  }
+
+  const next=!current;
+
+  const message=next
+    ? 'Activate this staff account?'
+    : 'Deactivate this staff account?';
+
+  if(!confirm(message))return;
+
+  const r=await sb
+    .from('profiles')
+    .update({active:next})
+    .eq('id',id);
+
+  if(r.error)return alert(r.error.message);
+
+  await refresh();
+  showStaff();
+}
 async function changeRole(id,role){if(!isAdmin())return;const r=await sb.from('profiles').update({role}).eq('id',id);if(r.error)return alert(r.error.message);await refresh();showStaff()}
 
 async function startApp(){if(!window.KTBS_SUPABASE_URL||window.KTBS_SUPABASE_URL.includes('PASTE_')){$('loginMessage').textContent='Supabase connection is not configured.';return}const {data:{session}}=await sb.auth.getSession();if(session)await enterApp(session.user)}
