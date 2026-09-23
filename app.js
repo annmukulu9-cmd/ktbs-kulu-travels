@@ -94,9 +94,17 @@ async function openClient(id){
 
 <div class="card" style="margin:12px 0;box-shadow:none">
   <div class="kicker">ACCOUNTABILITY</div>
+
   <b>Assigned Consultant</b>
   <div style="margin-top:4px">
     ${esc(profileName(c.consultant_id))}
+  </div>
+
+  <div style="margin-top:12px">
+    <b>Last Updated By</b>
+    <div style="margin-top:4px">
+      ${esc(profileName(c.updated_by))}
+    </div>
   </div>
 </div>
 
