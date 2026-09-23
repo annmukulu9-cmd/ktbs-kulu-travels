@@ -250,11 +250,15 @@ async function editBooking(b){
           Client
           <input value="${esc(c?.name||'')} — ${esc(c?.client_code||'')}" readonly>
         </label>
-        <label>
+       <label>
   Assigned Consultant
   <input value="${esc(profileName(b.consultant_id))}" readonly>
 </label>
 
+<label>
+  Last Updated By
+  <input value="${esc(profileName(b.updated_by))}" readonly>
+</label>
         <label>
           Quotation
           <input value="${esc(quoteById(b.quotation_id)?.quotation_no||'')}" readonly>
