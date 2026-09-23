@@ -99,6 +99,16 @@ tr:last-child td{
   width:92px;
   text-align:right;
 }
+/* Space between Supplier Pending and Gross Profit */
+.booking-table th:nth-child(10),
+.booking-table td:nth-child(10){
+  padding-right:24px;
+}
+
+.booking-table th:nth-child(11),
+.booking-table td:nth-child(11){
+  padding-left:24px;
+}
 .booking-table th:nth-child(11),
 .booking-table td:nth-child(11){
   padding-right:20px;
@@ -108,6 +118,7 @@ tr:last-child td{
 .booking-table td:nth-child(12){
   padding-left:20px;
 }
+
 
 /* BOOKING STATUS */
 .booking-table th:nth-child(13),
