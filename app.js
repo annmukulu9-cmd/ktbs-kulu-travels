@@ -881,7 +881,155 @@ async function recordSupplierPayment(){if(!cache.bookings.length)return alert('N
 
 function historyTable(filter='',arr=cache.history){const f=String(filter||'').toLowerCase(),a=arr.filter(h=>!f||[h.destination,h.services,h.hotel_supplier].join(' ').toLowerCase().includes(f));return `<table class="booking-table"><thead><tr><th>Client</th><th>Destination</th><th>Travel Date</th><th>Experiences / Services</th><th>Hotel / Supplier</th><th>Booking</th><th>Value</th></tr></thead><tbody>${a.map(h=>`<tr><td><b>${esc(clientById(h.client_id)?.name||'—')}</b><br><small>${esc(clientById(h.client_id)?.client_code||'')}</small></td><td>${esc(h.destination||'—')}</td><td>${esc(h.departure||'—')}</td><td>${esc(h.services||'—')}</td><td>${esc(h.hotel_supplier||'—')}</td><td>${esc(bookingById(h.booking_id)?.booking_no||'—')}</td><td>${money(h.travel_value)}</td></tr>`).join('')}</tbody></table>`}
 function historyPage(){$('content').innerHTML=`<div class="toolbar"><input placeholder="Search client, destination or experience…" oninput="$('historyTable').innerHTML=historyTable(this.value)"></div>${tableWrap(`<div id="historyTable">${historyTable()}</div>`)}`}
-function reportsPage(){const rows=cache.bookings.map(financeForBooking),gp=rows.reduce((a,b)=>a+b.gross,0),np=rows.reduce((a,b)=>a+b.net,0);$('content').innerHTML=`<div class="grid stats">${stat('Clients',cache.clients.length,'Master records')}${stat('Quotations',cache.quotations.length,'Live quotations')}${stat('Bookings',cache.bookings.length,'Live bookings')}${stat('Completed Trips',cache.bookings.filter(b=>b.status==='COMPLETED').length,'Feeds travel history')}${stat('Gross Profit',money(gp),'All bookings')}${stat('Net Profit',money(np),'All bookings')}</div>${tableWrap(`<h3>Consultant Activity</h3>${[...new Set(cache.bookings.map(b=>profileName(b.consultant_id)).filter(x=>x!=='—'))].map(n=>`<p><b>${esc(n)}</b>: ${cache.bookings.filter(b=>profileName(b.consultant_id)===n).length} booking(s)</p>`).join('')||'<p>No booking activity yet.</p>'}`)}`}
+function reportsPage(){
+  const rows=cache.bookings.map(financeForBooking);
+
+  const gp=rows.reduce((a,b)=>a+b.gross,0);
+  const np=rows.reduce((a,b)=>a+b.net,0);
+
+  const consultants=[...new Set(
+    [
+      ...cache.clients.map(c=>c.consultant_id),
+      ...cache.quotations.map(q=>q.consultant_id),
+      ...cache.bookings.map(b=>b.consultant_id)
+    ].filter(Boolean)
+  )];
+
+  const activity=consultants.map(id=>{
+    const clients=cache.clients.filter(c=>c.consultant_id===id);
+
+    const quotations=cache.quotations.filter(
+      q=>q.consultant_id===id
+    );
+
+    const bookings=cache.bookings.filter(
+      b=>b.consultant_id===id
+    );
+
+    const finances=bookings.map(financeForBooking);
+
+    const bookingValue=finances.reduce(
+      (a,b)=>a+b.selling,
+      0
+    );
+
+    const clientPaid=finances.reduce(
+      (a,b)=>a+b.clientPaid,
+      0
+    );
+
+    const grossProfit=finances.reduce(
+      (a,b)=>a+b.gross,
+      0
+    );
+
+    const netProfit=finances.reduce(
+      (a,b)=>a+b.net,
+      0
+    );
+
+    return {
+      id,
+      name:profileName(id),
+      clients:clients.length,
+      quotations:quotations.length,
+      bookings:bookings.length,
+      bookingValue,
+      clientPaid,
+      grossProfit,
+      netProfit
+    };
+  });
+
+  $('content').innerHTML=`
+    <div class="grid stats">
+      ${stat(
+        'Clients',
+        cache.clients.length,
+        'Master records'
+      )}
+
+      ${stat(
+        'Quotations',
+        cache.quotations.length,
+        'Live quotations'
+      )}
+
+      ${stat(
+        'Bookings',
+        cache.bookings.length,
+        'Live bookings'
+      )}
+
+      ${stat(
+        'Completed Trips',
+        cache.bookings.filter(
+          b=>b.status==='COMPLETED'
+        ).length,
+        'Feeds travel history'
+      )}
+
+      ${stat(
+        'Gross Profit',
+        money(gp),
+        'All bookings'
+      )}
+
+      ${stat(
+        'Net Profit',
+        money(np),
+        'All bookings'
+      )}
+    </div>
+
+    ${tableWrap(`
+      <div class="section-head">
+        <div>
+          <h3>Consultant Activity</h3>
+          <p class="muted">
+            Client, quotation and booking activity by assigned consultant.
+          </p>
+        </div>
+      </div>
+
+      ${
+        activity.length
+        ? `
+          <table>
+            <thead>
+              <tr>
+                <th>Consultant</th>
+                <th>Clients</th>
+                <th>Quotations</th>
+                <th>Bookings</th>
+                <th>Booking Value</th>
+                <th>Client Paid</th>
+                <th>Gross Profit</th>
+                <th>Net Profit</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${activity.map(x=>`
+                <tr>
+                  <td><b>${esc(x.name)}</b></td>
+                  <td>${x.clients}</td>
+                  <td>${x.quotations}</td>
+                  <td>${x.bookings}</td>
+                  <td>${money(x.bookingValue)}</td>
+                  <td>${money(x.clientPaid)}</td>
+                  <td>${money(x.grossProfit)}</td>
+                  <td>${money(x.netProfit)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `
+        : '<p class="empty">No consultant activity yet.</p>'
+      }
+    `)}
+  `;
+}
 function settingsPage(){$('content').innerHTML=`<div class="page-grid"><div class="page-card"><h3>Current User</h3><p><b>${esc(profile?.full_name||'')}</b><br>${esc(me?.email||'')}<br>${badge(profile?.role?.toUpperCase())}</p></div><div class="page-card"><h3>Permissions</h3><p>
   Consultants can create clients, quotations and operational records.
   Saved client and quotation records are protected from consultant
