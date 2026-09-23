@@ -85,9 +85,17 @@ async function openClient(id){
 
       <h2>${esc(c.name)}</h2>
 
-      <p>${esc(c.phone||'')} · ${esc(c.email||'')}</p>
+     <p>${esc(c.phone||'')} · ${esc(c.email||'')}</p>
 
-      <div class="form-grid">
+<div class="card" style="margin:12px 0;box-shadow:none">
+  <div class="kicker">ACCOUNTABILITY</div>
+  <b>Assigned Consultant</b>
+  <div style="margin-top:4px">
+    ${esc(profileName(c.consultant_id))}
+  </div>
+</div>
+
+<div class="form-grid">
 
         <div>
           <b>Trips with Kulu</b>
