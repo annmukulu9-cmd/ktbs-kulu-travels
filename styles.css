@@ -204,4 +204,285 @@ tr:last-child td{
   position:relative;
 }.hero h2{font:500 29px Georgia,serif;margin:0}.script{color:var(--accent);font-style:italic}.hero p{color:#60707b;font-size:12px}.quick{grid-template-columns:1fr 1fr;gap:8px}.quick button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:12px;color:#45545f;font-size:11px;font-weight:700}.quick button:hover{border-color:var(--accent);color:var(--accent2)}
 .inline-select,.inline-add{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:end}.inline-select button,.inline-add button{white-space:nowrap;padding:8px 10px}.inline-select select,.inline-select input{min-width:0}.inline-add{grid-template-columns:1fr auto auto;margin:8px 0 14px}.big-number{font:700 20px Georgia,serif;margin-top:5px}.muted{color:var(--muted);font-size:11px}.selected-client{display:none;box-shadow:none;background:#f8fdfe;margin:12px 0}.total-box{margin-top:15px;box-shadow:none;background:#f8fdfe}.total-box>div{display:flex;justify-content:space-between;margin:7px 0}.page-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.role-badge{padding:7px 12px;border-radius:20px;background:#eef7f8;border:1px solid #c8e1e4;font-size:11px;font-weight:700;letter-spacing:.08em}
-@media(max-width:1050px){.stats{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}.top-actions input{width:220px}}@media(max-width:900px){.page-grid{grid-template-columns:1fr}}@media(max-width:760px){.sidebar{width:72px}.side-brand img{width:52px}.side-footer,nav button span{display:none}.topbar{padding:12px 16px}.top-actions input{display:none}#content{padding:20px 15px}.form-grid{grid-template-columns:1fr}.form-grid .wide{grid-column:auto}.inline-add{grid-template-columns:1fr}.inline-select{grid-template-columns:1fr}}@media(max-width:520px){.stats{grid-template-columns:1fr}.welcome{display:block}.date{text-align:left;margin-top:8px}}
+/* =========================================================
+   RESPONSIVE LAYOUT — LAPTOP / TABLET / MOBILE
+   ========================================================= */
+
+/* Prevent the entire application from becoming wider than
+   the device viewport */
+html,
+body{
+  max-width:100%;
+  overflow-x:hidden;
+}
+
+.app{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+}
+
+.main{
+  min-width:0;
+  max-width:100%;
+  overflow-x:hidden;
+}
+
+/* Allow dashboard grid children to shrink properly */
+.grid,
+.two,
+.stats,
+.page-grid{
+  min-width:0;
+}
+
+.grid > *,
+.two > *,
+.stats > *,
+.page-grid > *{
+  min-width:0;
+}
+
+/* Cards must never force the page wider */
+.card,
+.page-card{
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+}
+
+/* Tables scroll INSIDE their container */
+table{
+  max-width:100%;
+}
+
+/* Keep booking table wide enough for its information,
+   but contain its horizontal overflow */
+.booking-table{
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+}
+
+/* ---------------- LAPTOP ---------------- */
+
+@media (max-width:1200px){
+
+  .sidebar{
+    width:210px;
+  }
+
+  .topbar{
+    padding:15px 22px;
+  }
+
+  #content{
+    padding:24px 22px;
+  }
+
+  .top-actions input{
+    width:240px;
+  }
+
+  .stats{
+    gap:12px;
+  }
+
+  .card{
+    padding:15px;
+  }
+}
+
+/* ---------------- TABLET ---------------- */
+
+@media (max-width:900px){
+
+  .sidebar{
+    width:72px;
+    padding:15px 10px;
+  }
+
+  .side-brand{
+    height:70px;
+  }
+
+  .side-brand img{
+    width:52px;
+  }
+
+  .side-footer,
+  nav button span{
+    display:none;
+  }
+
+  .topbar{
+    min-height:74px;
+    padding:12px 18px;
+  }
+
+  .topbar h2{
+    font-size:22px;
+  }
+
+  .top-actions{
+    gap:7px;
+  }
+
+  .top-actions input{
+    width:190px;
+  }
+
+  #content{
+    padding:20px 18px;
+  }
+
+  .stats{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .two{
+    grid-template-columns:1fr;
+  }
+
+  .page-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+/* ---------------- PHONE ---------------- */
+
+@media (max-width:600px){
+
+  .sidebar{
+    width:62px;
+    padding:12px 7px;
+  }
+
+  .side-brand{
+    height:62px;
+  }
+
+  .side-brand img{
+    width:45px;
+  }
+
+  .topbar{
+    padding:11px 13px;
+    gap:8px;
+  }
+
+  .topbar h2{
+    font-size:20px;
+  }
+
+  .top-actions input{
+    display:none;
+  }
+
+  .top-actions{
+    font-size:11px;
+  }
+
+  .role-badge{
+    display:none;
+  }
+
+  #content{
+    padding:16px 12px;
+  }
+
+  .welcome{
+    display:block;
+  }
+
+  .welcome h1{
+    font-size:26px;
+  }
+
+  .date{
+    text-align:left;
+    margin-top:8px;
+  }
+
+  .stats{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  .hero{
+    min-height:190px;
+    padding:25px 22px;
+    background-position:center;
+  }
+
+  .hero h2{
+    font-size:25px;
+  }
+
+  .form-grid{
+    grid-template-columns:1fr;
+  }
+
+  .form-grid .wide{
+    grid-column:auto;
+  }
+
+  .inline-add,
+  .inline-select{
+    grid-template-columns:1fr;
+  }
+
+  .toolbar{
+    flex-direction:column;
+  }
+
+  .toolbar input,
+  .toolbar select{
+    max-width:none;
+  }
+
+  .modal{
+    padding:10px;
+  }
+
+  .modal-card{
+    width:100%;
+    max-height:94vh;
+    padding:16px;
+  }
+}
+
+/* ---------------- VERY SMALL PHONES ---------------- */
+
+@media (max-width:400px){
+
+  .sidebar{
+    width:56px;
+  }
+
+  #content{
+    padding:13px 9px;
+  }
+
+  .topbar{
+    padding:10px;
+  }
+
+  .topbar h2{
+    font-size:18px;
+  }
+
+  .avatar{
+    width:30px;
+    height:30px;
+  }
+
+  .hero{
+    min-height:175px;
+    padding:20px 18px;
+  }
+
+  .hero h2{
+    font-size:22px;
+  }
+}
