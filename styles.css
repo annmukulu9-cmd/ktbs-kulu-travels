@@ -486,3 +486,92 @@ table{
     font-size:22px;
   }
 }
+/* =========================================================
+   RESPONSIVE CLIENT & BOOKING ACTIONS
+   ========================================================= */
+
+/* Client Master table */
+.client-table{
+  width:100%;
+  min-width:900px;
+  table-layout:fixed;
+}
+
+/* Client Master column widths */
+.client-table th:nth-child(1),
+.client-table td:nth-child(1){
+  width:180px;
+}
+
+.client-table th:nth-child(2),
+.client-table td:nth-child(2){
+  width:105px;
+}
+
+.client-table th:nth-child(3),
+.client-table td:nth-child(3){
+  width:140px;
+}
+
+.client-table th:nth-child(4),
+.client-table td:nth-child(4){
+  width:120px;
+}
+
+.client-table th:nth-child(5),
+.client-table td:nth-child(5){
+  width:130px;
+}
+
+.client-table th:nth-child(6),
+.client-table td:nth-child(6){
+  width:125px;
+}
+
+.client-table th:nth-child(7),
+.client-table td:nth-child(7){
+  width:105px;
+}
+
+.client-table th:nth-child(8),
+.client-table td:nth-child(8){
+  width:70px;
+  text-align:center;
+}
+
+/* Keep OPEN accessible on wide booking tables */
+.booking-table th:nth-child(15),
+.booking-table td:nth-child(15){
+  position:sticky;
+  right:0;
+  z-index:2;
+  background:#fff;
+  box-shadow:-6px 0 10px rgba(29,48,62,.06);
+}
+
+/* Keep the booking status beside the action */
+.booking-table th:nth-child(14),
+.booking-table td:nth-child(14){
+  position:sticky;
+  right:70px;
+  z-index:2;
+  background:#fff;
+}
+
+/* Mobile/tablet */
+@media(max-width:900px){
+
+  .client-table{
+    min-width:850px;
+  }
+
+  .booking-table th:nth-child(14),
+  .booking-table td:nth-child(14){
+    right:70px;
+  }
+
+  .booking-table th:nth-child(15),
+  .booking-table td:nth-child(15){
+    right:0;
+  }
+}
