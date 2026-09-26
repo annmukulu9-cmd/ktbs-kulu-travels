@@ -994,7 +994,170 @@ async function newService(){openModal('Add Service / Travel Item',`<form id="svF
 async function deleteMaster(table,id){if(!isAdmin())return;if(!confirm('Delete this master item?'))return;const r=await sb.from(table).delete().eq('id',id);if(r.error)return alert(r.error.message);await refresh();render()}
 
 function financePage(){const rows=cache.bookings.map(financeForBooking),sales=rows.reduce((a,b)=>a+b.selling,0),paid=rows.reduce((a,b)=>a+b.clientPaid,0),cost=rows.reduce((a,b)=>a+b.cost,0),sp=rows.reduce((a,b)=>a+b.supplierPaid,0),ex=rows.reduce((a,b)=>a+b.exp,0);$('content').innerHTML=`<div class="grid stats">${stat('Selling Amount',money(sales),'Live bookings')}${stat('Client Paid',money(paid),'Receipts recorded')}${stat('Client Balance',money(sales-paid),'Outstanding')}${stat('Supplier Cost',money(cost),'Committed cost')}${stat('Supplier Paid',money(sp),'Paid to suppliers')}${stat('Supplier Pending',money(cost-sp),'Outstanding')}${stat('Gross Profit',money(sales-cost),'Selling less supplier cost')}${stat('Net Profit',money(sales-cost-ex),'After other expenses')}</div>${tableWrap(`<div class="section-head"><h3>Booking Finance</h3><div><button class="primary" onclick="recordPayment()">+ Client Payment</button> <button onclick="recordSupplierPayment()">+ Supplier Payment</button></div></div>${bookingTable()}`)}`}
-async function recordPayment(){if(!cache.bookings.length)return alert('No bookings available.');openModal('Record Client Payment',`<form id="pForm"><label>Booking<select name="booking_id">${cache.bookings.map(b=>`<option value="${b.id}">${esc(b.booking_no)} — ${esc(clientById(b.client_id)?.name||'')}</option>`).join('')}</select></label><label>Payment Amount (KES)<input name="amount" type="number" min="0" required></label><label>Payment Date<input name="payment_date" type="date" value="${today()}"></label><label>Reference<input name="reference"></label><label>Notes<textarea name="notes"></textarea></label><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Record Payment</button></div></form>`);$('pForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));const r=await sb.from('client_payments').insert({...f,amount:+f.amount||0,created_by:me.id});if(r.error)return alert(r.error.message);await refresh();closeModal();go('finance')}}
+async function recordPayment(){
+  if(!cache.bookings.length){
+    return alert('No bookings available.');
+  }
+
+  openModal(
+    'Record Client Payment',
+    `<form id="pForm">
+
+      <label>
+        Booking
+        <select name="booking_id">
+          ${cache.bookings.map(b=>`
+            <option value="${b.id}">
+              ${esc(b.booking_no)} — ${esc(clientById(b.client_id)?.name||'')}
+            </option>
+          `).join('')}
+        </select>
+      </label>
+
+      <label>
+        Payment Amount (KES)
+        <input name="amount" type="number" min="0" required>
+      </label>
+
+      <label>
+        Payment Date
+        <input name="payment_date" type="date" value="${today()}">
+      </label>
+
+      <label>
+        Reference
+        <input name="reference">
+      </label>
+
+      <label>
+        Notes
+        <textarea name="notes"></textarea>
+      </label>
+
+      <div class="actions">
+        <button type="button" onclick="closeModal()">Cancel</button>
+        <button class="primary">Record Payment</button>
+      </div>
+
+    </form>`
+  );
+
+  $('pForm').onsubmit=async e=>{
+    e.preventDefault();
+
+    const f=Object.fromEntries(new FormData(e.target));
+    const amount=Number(f.amount)||0;
+
+    if(amount<=0){
+      return alert('Enter a payment amount greater than KES 0.');
+    }
+
+    /* Record the payment */
+    const r=await sb
+      .from('client_payments')
+      .insert({
+        ...f,
+        amount,
+        created_by:me.id
+      });
+
+    if(r.error){
+      return alert(r.error.message);
+    }
+
+    /* Get the booking */
+    const {data:b,error:bookingError}=await sb
+      .from('bookings')
+      .select('*')
+      .eq('id',f.booking_id)
+      .single();
+
+    if(bookingError){
+      await refresh();
+      closeModal();
+      return alert(
+        'Payment was recorded, but the booking status could not be updated.\n\n'+
+        bookingError.message
+      );
+    }
+
+    /* Calculate actual payments received */
+    const {data:payments,error:paymentError}=await sb
+      .from('client_payments')
+      .select('amount')
+      .eq('booking_id',b.id);
+
+    if(paymentError){
+      await refresh();
+      closeModal();
+      return alert(
+        'Payment was recorded, but the booking status could not be calculated.\n\n'+
+        paymentError.message
+      );
+    }
+
+    const clientPaid=(payments||[])
+      .reduce((sum,p)=>sum+Number(p.amount||0),0);
+
+    const selling=Number(b.selling_amount||0);
+
+    /*
+      Automatic payment status:
+      0 paid       → Quotation
+      Partial paid → Partially Paid
+      Full paid    → Fully Paid
+    */
+
+    let finalStatus=b.status;
+
+    if(selling>0 && clientPaid>=selling){
+      finalStatus='Fully Paid';
+    }else if(clientPaid>0 && b.status==='Quotation'){
+      finalStatus='Partially Paid';
+    }
+
+    /* Update booking status */
+    if(finalStatus!==b.status){
+
+      const update=await sb
+        .from('bookings')
+        .update({
+          status:finalStatus,
+          updated_by:me.id
+        })
+        .eq('id',b.id);
+
+      if(update.error){
+        await refresh();
+        closeModal();
+        return alert(
+          'Payment was recorded, but booking status could not be updated.\n\n'+
+          update.error.message
+        );
+      }
+
+      /* Synchronise Client Master + Quotation */
+      const sync=await syncClientStatus(
+        b.client_id,
+        finalStatus,
+        b.quotation_id
+      );
+
+      if(!sync.ok){
+        await refresh();
+        closeModal();
+        return alert(
+          'Payment was recorded and booking status was updated, but Client Master and Quotation could not be synchronized.\n\n'+
+          (sync.error?.message||'Unknown synchronization error')
+        );
+      }
+    }
+
+    await refresh();
+    closeModal();
+    go('finance');
+  };
+}
 async function recordSupplierPayment(){if(!cache.bookings.length)return alert('No bookings available.');openModal('Record Supplier Payment',`<form id="spForm"><label>Booking<select name="booking_id">${cache.bookings.map(b=>`<option value="${b.id}">${esc(b.booking_no)} — ${esc(clientById(b.client_id)?.name||'')}</option>`).join('')}</select></label><label>Payment Amount (KES)<input name="amount" type="number" min="0" required></label><label>Payment Date<input name="payment_date" type="date" value="${today()}"></label><label>Reference<input name="reference"></label><label>Notes<textarea name="notes"></textarea></label><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Record Payment</button></div></form>`);$('spForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));const r=await sb.from('supplier_payments').insert({...f,amount:+f.amount||0,created_by:me.id});if(r.error)return alert(r.error.message);await refresh();closeModal();go('finance')}}
 
 function historyTable(filter='',arr=cache.history){const f=String(filter||'').toLowerCase(),a=arr.filter(h=>!f||[h.destination,h.services,h.hotel_supplier].join(' ').toLowerCase().includes(f));return `<table class="booking-table"><thead><tr><th>Client</th><th>Destination</th><th>Travel Date</th><th>Experiences / Services</th><th>Hotel / Supplier</th><th>Booking</th><th>Value</th></tr></thead><tbody>${a.map(h=>`<tr><td><b>${esc(clientById(h.client_id)?.name||'—')}</b><br><small>${esc(clientById(h.client_id)?.client_code||'')}</small></td><td>${esc(h.destination||'—')}</td><td>${esc(h.departure||'—')}</td><td>${esc(h.services||'—')}</td><td>${esc(h.hotel_supplier||'—')}</td><td>${esc(bookingById(h.booking_id)?.booking_no||'—')}</td><td>${money(h.travel_value)}</td></tr>`).join('')}</tbody></table>`}
