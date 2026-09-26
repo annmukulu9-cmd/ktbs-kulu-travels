@@ -286,9 +286,7 @@ function bookingTable(n=999,status=''){
     </tbody>
   </table>`;
 }
-<th>Action</th></tr></thead><tbody>${arr.slice(0,n).map(b=>{const c=clientById(b.client_id),f=financeForBooking(b);return `<tr><td><button class="link-btn" onclick="openBooking('${b.id}')">Open</button></td><td><b>${esc(b.booking_no)}</b><br><small>${esc(quoteById(b.quotation_id)?.quotation_no||'')}</small></td><td>${esc(c?.name||'—')}<br><small>${esc(c?.client_code||'')}</small></td><td>${esc(b.destination||'')}</td><td>${esc(b.departure||'—')}</td><td>${money(f.selling)}</td><td>${money(f.clientPaid)}</td><td>${money(f.balance)}</td><td>${money(f.cost)}</td><td>${money(f.supplierPaid)}</td><td>${money(f.supplierPending)}</td><td>${money(f.gross)}</td><td>${money(f.net)}</td><td>${esc(profileName(b.consultant_id))}</td>
-<td>${badge(b.status)}</td>
-</tr>`}).join('')}</tbody></table>`}
+
 function bookingsPage(){$('content').innerHTML=`<div class="toolbar"><button class="primary" onclick="newBooking()">+ New Booking</button><select id="bookingStatus" onchange="filterBookings()"><option value="">All statuses</option>${STATUS.map(x=>`<option>${x}</option>`).join('')}</select></div>${tableWrap(`<div id="bookingTable">${bookingTable()}</div>`)}`}
 function filterBookings(){$('bookingTable').innerHTML=bookingTable(999,$('bookingStatus').value)}
 function partnerOptions(list,selected){return list.map(x=>`<option value="${x.id}" ${x.id===selected?'selected':''}>${esc(x.name)}</option>`).join('')}
