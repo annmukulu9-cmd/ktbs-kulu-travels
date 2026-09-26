@@ -33,7 +33,7 @@ th{
   font-size:9px;
   color:#7b8790;
   border-bottom:1px solid var(--line);
-  padding:10px 8px;
+  padding:9px 6px;
   white-space:nowrap;
 }
 
@@ -51,7 +51,7 @@ tr:last-child td{
 /* BOOKING TABLE */
 .booking-table{
   width:100%;
-  min-width:1550px;
+  min-width:1280px;
   table-layout:fixed;
 }
 
@@ -90,14 +90,14 @@ tr:last-child td{
 .booking-table td:nth-child(8),
 .booking-table th:nth-child(9),
 .booking-table td:nth-child(9){
-  width:100px;
+width:82px;
   text-align:right;
 }
 
 /* Supplier Pending */
 .booking-table th:nth-child(10),
 .booking-table td:nth-child(10){
-  width:115px;
+  width:95px;
   text-align:right;
   padding-right:18px;
 }
@@ -105,7 +105,7 @@ tr:last-child td{
 /* Gross Profit */
 .booking-table th:nth-child(11),
 .booking-table td:nth-child(11){
-  width:110px;
+  width:95px;
   text-align:right;
   padding-left:18px;
 }
@@ -113,8 +113,7 @@ tr:last-child td{
 /* Net Profit */
 .booking-table th:nth-child(12),
 .booking-table td:nth-child(12){
-  width:105px;
-  text-align:right;
+  width:90px;
 }
 
 /* Consultant */
