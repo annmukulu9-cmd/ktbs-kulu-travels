@@ -252,10 +252,11 @@ function bookingTable(n=999,status=''){
         <th>Client / ID</th>
         <th>Destination</th>
         <th>Travel Date</th>
-        <th>Selling</th>
-        <th>Client Paid</th>
-        <th>Balance</th>
-        <th>Status</th>
+       <th>Selling</th>
+<th>Client Paid</th>
+<th>Balance</th>
+<th>Supplier Pending</th>
+<th>Status</th>
       </tr>
     </thead>
     <tbody>
@@ -279,8 +280,9 @@ function bookingTable(n=999,status=''){
           <td>${esc(b.departure||'—')}</td>
           <td>${money(f.selling)}</td>
           <td>${money(f.clientPaid)}</td>
-          <td>${money(f.balance)}</td>
-          <td>${badge(b.status)}</td>
+         <td>${money(f.balance)}</td>
+<td>${money(f.supplierPending)}</td>
+<td>${badge(b.status)}</td>
         </tr>`;
       }).join('')}
     </tbody>
