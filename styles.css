@@ -48,43 +48,60 @@ tr:last-child td{
   border-bottom:0;
 }
 
-/* BOOKING TABLE */
+/* BOOKING TABLE — CLEAN PROFESSIONAL LAYOUT */
+
 .booking-table{
   width:100%;
   min-width:980px;
   table-layout:fixed;
 }
 
+.booking-table thead,
+.booking-table tbody{
+  display:table;
+  width:100%;
+  min-width:0;
+  table-layout:fixed;
+}
+
+/* Action */
 .booking-table th:nth-child(1),
 .booking-table td:nth-child(1){
   width:65px;
+  min-width:65px;
   text-align:center;
   position:sticky;
   left:0;
   z-index:3;
   background:#fff;
+  box-shadow:6px 0 10px rgba(29,48,62,.06);
 }
 
+/* Booking */
 .booking-table th:nth-child(2),
 .booking-table td:nth-child(2){
   width:120px;
 }
 
+/* Client */
 .booking-table th:nth-child(3),
 .booking-table td:nth-child(3){
   width:145px;
 }
 
+/* Destination */
 .booking-table th:nth-child(4),
 .booking-table td:nth-child(4){
   width:110px;
 }
 
+/* Travel Date */
 .booking-table th:nth-child(5),
 .booking-table td:nth-child(5){
   width:105px;
 }
 
+/* Financial summary */
 .booking-table th:nth-child(6),
 .booking-table td:nth-child(6),
 .booking-table th:nth-child(7),
@@ -96,17 +113,11 @@ tr:last-child td{
   white-space:nowrap;
 }
 
+/* Status */
 .booking-table th:nth-child(9),
 .booking-table td:nth-child(9){
   width:110px;
   text-align:center;
-}
-}
-
-/* Booking */
-.booking-table th:nth-child(1),
-.booking-table td:nth-child(1){
-  width:115px;
 }
 
 /* Client */
