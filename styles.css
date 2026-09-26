@@ -51,8 +51,56 @@ tr:last-child td{
 /* BOOKING TABLE */
 .booking-table{
   width:100%;
-  min-width:1280px;
+  min-width:980px;
   table-layout:fixed;
+}
+
+.booking-table th:nth-child(1),
+.booking-table td:nth-child(1){
+  width:65px;
+  text-align:center;
+  position:sticky;
+  left:0;
+  z-index:3;
+  background:#fff;
+}
+
+.booking-table th:nth-child(2),
+.booking-table td:nth-child(2){
+  width:120px;
+}
+
+.booking-table th:nth-child(3),
+.booking-table td:nth-child(3){
+  width:145px;
+}
+
+.booking-table th:nth-child(4),
+.booking-table td:nth-child(4){
+  width:110px;
+}
+
+.booking-table th:nth-child(5),
+.booking-table td:nth-child(5){
+  width:105px;
+}
+
+.booking-table th:nth-child(6),
+.booking-table td:nth-child(6),
+.booking-table th:nth-child(7),
+.booking-table td:nth-child(7),
+.booking-table th:nth-child(8),
+.booking-table td:nth-child(8){
+  width:105px;
+  text-align:right;
+  white-space:nowrap;
+}
+
+.booking-table th:nth-child(9),
+.booking-table td:nth-child(9){
+  width:110px;
+  text-align:center;
+}
 }
 
 /* Booking */
