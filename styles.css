@@ -540,23 +540,10 @@ table{
 }
 
 /* Keep OPEN accessible on wide booking tables */
-.booking-table th:nth-child(15),
-.booking-table td:nth-child(15){
-  position:sticky;
-  right:0;
-  z-index:2;
-  background:#fff;
-  box-shadow:-6px 0 10px rgba(29,48,62,.06);
-}
+
 
 /* Keep the booking status beside the action */
-.booking-table th:nth-child(14),
-.booking-table td:nth-child(14){
-  position:sticky;
-  right:70px;
-  z-index:2;
-  background:#fff;
-}
+
 
 /* Mobile/tablet */
 @media(max-width:900px){
@@ -574,4 +561,16 @@ table{
   .booking-table td:nth-child(15){
     right:0;
   }
+}
+/* BOOKING ACTION — KEEP OPEN VISIBLE */
+.booking-table th:first-child,
+.booking-table td:first-child{
+  width:70px;
+  min-width:70px;
+  text-align:center;
+  position:sticky;
+  left:0;
+  z-index:3;
+  background:#fff;
+  box-shadow:6px 0 10px rgba(29,48,62,.06);
 }
