@@ -113,11 +113,20 @@ tr:last-child td{
   white-space:nowrap;
 }
 
-/* Status */
+/* Supplier Pending */
 .booking-table th:nth-child(9),
 .booking-table td:nth-child(9){
+  width:115px;
+  text-align:right;
+  white-space:nowrap;
+}
+
+/* Status */
+.booking-table th:nth-child(10),
+.booking-table td:nth-child(10){
   width:110px;
   text-align:center;
+}
 }
 
 /* Client */
