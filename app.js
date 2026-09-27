@@ -974,23 +974,108 @@ async function syncHistory(bookingId){
 
   if(r.error)alert(r.error.message);
 }
-async function newBooking(){if(!cache.quotations.length)return alert('Create a quotation first.');const qs=cache.quotations.map(q=>{const c=clientById(q.client_id);return `<option value="${q.id}">${esc(q.quotation_no)} — ${esc(c?.name||'')}</option>`}).join('');openModal('New Booking',`<form id="bForm"><div class="form-grid"><label>Quotation<select name="quotation_id">${qs}</select></label><label>
-  Booking Status
-  <input value="Quotation" readonly>
-  <input type="hidden" name="status" value="Quotation">
-</label><label>Selling Amount<input type="number" name="selling_amount" required></label><label>Supplier Cost<input type="number" name="supplier_cost" value="0"></label><label>Other Expenses<input type="number" name="other_expenses" value="0"></label><label>Supplier<select name="supplier_id"><option value="">Select supplier…</option>${partnerOptions(cache.suppliers,'')}</select></label><label>Hotel<select name="hotel_id"><option value="">Select hotel…</option>${partnerOptions(cache.hotels,'')}</select></label><label>Booking Reference<input name="reference"></label><label class="wide">Notes<textarea name="notes"></textarea></label></div><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Booking</button></div></form>`);$('bForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),q=quoteById(f.quotation_id);if(!q)return;const c=clientById(q.client_id),bno=await nextDoc('BK','bookings','booking_no');const sup=cache.suppliers.find(s=>s.id===f.supplier_id),hot=cache.hotels.find(h=>h.id===f.hotel_id);const r=await sb.from('bookings').insert({booking_no:bno,quotation_id:q.id,client_id:c.id,consultant_id:q.consultant_id||me.id,destination:q.destination,departure:q.departure,return_date:q.return_date,supplier_id:f.supplier_id||null,supplier_name:sup?.name||null,hotel_id:f.hotel_id||null,hotel_name:hot?.name||null,status:f.status,selling_amount:+f.selling_amount||0,supplier_cost:+f.supplier_cost||0,other_expenses:+f.other_expenses||0,reference:f.reference||'',notes:f.notes||'',booking_date:today(),created_by:me.id,updated_by:me.id});if(r.error)return alert(r.error.message);const sync=await syncClientStatus(c.id,f.status,q.id);
+async function newBooking(){
+  if(!cache.quotations.length)return alert('Create a quotation first.');
 
-if(!sync.ok){
-  alert('Booking was created, but Client Master and Quotation status could not be synchronized. Please retry.\n\n'+(sync.error?.message||'Unknown synchronization error'));
-  await refresh();
-  return;
-}}await refresh();closeModal();go('bookings')}
+  const qs=cache.quotations.map(q=>{
+    const c=clientById(q.client_id);
+    return `<option value="${q.id}">${esc(q.quotation_no)} — ${esc(c?.name||'')}</option>`;
+  }).join('');
+
+  openModal('New Booking',`
+    <form id="bForm">
+      <div class="form-grid">
+        <label>Quotation<select name="quotation_id">${qs}</select></label>
+        <label>
+          Booking Status
+          <input value="Quotation" readonly>
+          <input type="hidden" name="status" value="Quotation">
+        </label>
+        <label>Selling Amount<input type="number" name="selling_amount" required></label>
+        <label>Supplier Cost<input type="number" name="supplier_cost" value="0"></label>
+        <label>Other Expenses<input type="number" name="other_expenses" value="0"></label>
+        <label>Supplier<select name="supplier_id"><option value="">Select supplier…</option>${partnerOptions(cache.suppliers,'')}</select></label>
+        <label>Hotel<select name="hotel_id"><option value="">Select hotel…</option>${partnerOptions(cache.hotels,'')}</select></label>
+        <label>Booking Reference<input name="reference"></label>
+        <label class="wide">Notes<textarea name="notes"></textarea></label>
+      </div>
+      <div class="actions">
+        <button type="button" onclick="closeModal()">Cancel</button>
+        <button class="primary">Save Booking</button>
+      </div>
+    </form>`);
+
+  $('bForm').onsubmit=async e=>{
+    e.preventDefault();
+
+    const f=Object.fromEntries(new FormData(e.target));
+    const q=quoteById(f.quotation_id);
+    if(!q)return;
+
+    const c=clientById(q.client_id);
+    const bno=await nextDoc('BK','bookings','booking_no');
+    const sup=cache.suppliers.find(s=>s.id===f.supplier_id);
+    const hot=cache.hotels.find(h=>h.id===f.hotel_id);
+
+    const r=await sb.from('bookings').insert({
+      booking_no:bno,
+      quotation_id:q.id,
+      client_id:c.id,
+      consultant_id:q.consultant_id||me.id,
+      destination:q.destination,
+      departure:q.departure,
+      return_date:q.return_date,
+      supplier_id:f.supplier_id||null,
+      supplier_name:sup?.name||null,
+      hotel_id:f.hotel_id||null,
+      hotel_name:hot?.name||null,
+      status:f.status,
+      selling_amount:+f.selling_amount||0,
+      supplier_cost:+f.supplier_cost||0,
+      other_expenses:+f.other_expenses||0,
+      reference:f.reference||'',
+      notes:f.notes||'',
+      booking_date:today(),
+      created_by:me.id,
+      updated_by:me.id
+    });
+
+    if(r.error)return alert(r.error.message);
+
+    const sync=await syncClientStatus(c.id,f.status,q.id);
+
+    if(!sync.ok){
+      alert('Booking was created, but Client Master and Quotation status could not be synchronized. Please retry.\n\n'+(sync.error?.message||'Unknown synchronization error'));
+      await refresh();
+      return;
+    }
+
+    await refresh();
+    closeModal();
+    go('bookings');
+  };
 }
 
-function suppliersPage(){ $('content').innerHTML=`<div class="toolbar"><button class="primary" onclick="newSupplier()">+ New Supplier</button></div>${tableWrap(cache.suppliers.length?`<table><thead><tr><th>Supplier</th><th>Contact Person</th><th>Phone</th><th>Email</th><th>Type</th><th></th></tr></thead><tbody>${cache.suppliers.map(s=>`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.contact_person||s.contact||'')}</td><td>${esc(s.phone||'')}</td><td>${esc(s.email||'')}</td><td>${esc(s.type||'')}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('suppliers','${s.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No supplier records yet.</div>')`}
-function hotelsPage(){ $('content').innerHTML=`<div class="toolbar"><button class="primary" onclick="newHotel()">+ New Hotel</button></div>${tableWrap(cache.hotels.length?`<table><thead><tr><th>Hotel</th><th>Destination</th><th>Contact Person</th><th>Phone</th><th>Email</th><th></th></tr></thead><tbody>${cache.hotels.map(h=>`<tr><td><b>${esc(h.name)}</b></td><td>${esc(h.destination||'')}</td><td>${esc(h.contact_person||h.contact||'')}</td><td>${esc(h.phone||'')}</td><td>${esc(h.email||'')}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('hotels','${h.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No hotel records yet.</div>')`}
+function suppliersPage(){
+  $('content').innerHTML=`<div class="toolbar"><button class="primary" onclick="newSupplier()">+ New Supplier</button></div>${tableWrap(cache.suppliers.length?`<table><thead><tr><th>Supplier</th><th>Contact Person</th><th>Phone</th><th>Email</th><th>Type</th><th></th></tr></thead><tbody>${cache.suppliers.map(s=>`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.contact_person||s.contact||'')}</td><td>${esc(s.phone||'')}</td><td>${esc(s.email||'')}</td><td>${esc(s.type||'')}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('suppliers','${s.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No supplier records yet.</div>')}`;
+}
+
+function hotelsPage(){
+  $('content').innerHTML=`<div class="toolbar"><button class="primary" onclick="newHotel()">+ New Hotel</button></div>${tableWrap(cache.hotels.length?`<table><thead><tr><th>Hotel</th><th>Destination</th><th>Contact Person</th><th>Phone</th><th>Email</th><th></th></tr></thead><tbody>${cache.hotels.map(h=>`<tr><td><b>${esc(h.name)}</b></td><td>${esc(h.destination||'')}</td><td>${esc(h.contact_person||h.contact||'')}</td><td>${esc(h.phone||'')}</td><td>${esc(h.email||'')}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('hotels','${h.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No hotel records yet.</div>')}`;
+}
+
 function servicesPage(){$('content').innerHTML=`<div class="toolbar"><button class="primary" onclick="newService()">+ New Service / Travel Item</button></div>${tableWrap(cache.services.length?`<table><thead><tr><th>Service / Item</th><th>Category</th><th>Destination</th><th>Active</th><th></th></tr></thead><tbody>${cache.services.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.category||'')}</td><td>${esc(s.destination||'')}</td><td>${s.active?'Yes':'No'}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('services','${s.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No services yet.</div>')}`}
-async async function newSupplier(){openModal('Add Supplier',`<form id="sForm"><div class="form-grid"><label>Supplier Name<input name="name" required></label><label>Contact Person<input name="contact_person"></label><label>Phone<input name="phone" placeholder="+254…"></label><label>Email<input type="email" name="email"></label><label>Legacy Contact / Other Details<input name="contact"></label><label>Type<input name="type" placeholder="Safari, Flight, Transfer…"></label></div><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Supplier</button></div></form>`);$('sForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));f.created_by=me.id;const r=await sb.from('suppliers').insert(f);if(r.error)return alert(r.error.message);await refresh();closeModal();go('suppliers')}}
+async function newSupplier(){
+  openModal('Add Supplier',`<form id="sForm"><div class="form-grid">
+    <label>Supplier Name<input name="name" required></label>
+    <label>Contact Person<input name="contact_person"></label>
+    <label>Phone<input name="phone" placeholder="+254…"></label>
+    <label>Email<input type="email" name="email"></label>
+    <label>Legacy Contact / Other Details<input name="contact"></label>
+    <label>Type<input name="type" placeholder="Safari, Flight, Transfer…"></label>
+  </div><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Supplier</button></div></form>`);
+  $('sForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));f.created_by=me.id;const r=await sb.from('suppliers').insert(f);if(r.error)return alert(r.error.message);await refresh();closeModal();go('suppliers')}
+}
 async function newHotel(){openModal('Add Hotel',`<form id="hForm"><div class="form-grid"><label>Hotel Name<input name="name" required></label><label>Destination<input name="destination"></label><label>Contact Person<input name="contact_person"></label><label>Phone<input name="phone" placeholder="+254…"></label><label>Email<input type="email" name="email"></label><label>Legacy Contact / Other Details<input name="contact"></label></div><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Hotel</button></div></form>`);$('hForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));f.created_by=me.id;const r=await sb.from('hotels').insert(f);if(r.error)return alert(r.error.message);await refresh();closeModal();go('hotels')}}
 function newService(){openModal('Add Service / Travel Item',`<form id="svForm"><label>Service Name<input name="name" required></label><label>Category<input name="category" placeholder="Flights, Safari, Accommodation…"></label><label>Destination<input name="destination"></label><label>Default Amount (KES)<input type="number" name="default_amount" value="0"></label><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Service</button></div></form>`);$('svForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));f.default_amount=+f.default_amount||0;f.created_by=me.id;const r=await sb.from('services').insert(f);if(r.error)return alert(r.error.message);await refresh();closeModal();go('services')}}
 async function deleteMaster(table,id){if(!isAdmin())return;if(!confirm('Delete this master item?'))return;const r=await sb.from(table).delete().eq('id',id);if(r.error)return alert(r.error.message);await refresh();render()}
