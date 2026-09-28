@@ -1441,7 +1441,7 @@ function settingsPage(){$('content').innerHTML=`<div class="page-grid"><div clas
           ${rows.map(x=>`
             <tr>
               <td>
-                <b>\${esc(String(x.full_name||'').trim()||'Name not set')}</b>
+                <b>${esc(String(x.full_name||'').trim()||'Name not set')}</b>
                 ${x.id===me?.id
                   ? '<br><small>Current user</small>'
                   : ''
