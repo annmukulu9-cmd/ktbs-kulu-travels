@@ -1410,7 +1410,11 @@ function settingsPage(){$('content').innerHTML=`<div class="page-grid"><div clas
   master data, client records and quotation records.
 </p></div><div class="page-card"><h3>Staff Accounts</h3><p>Login accounts are managed by Supabase Authentication. KTBS profiles store staff roles.</p>${isAdmin()?`<button class="primary" onclick="showStaff()">View Staff & Roles</button>`:'<p>Admin only.</p>'}</div></div>`}
  async function showStaff(){
-  const rows=await q('profiles');
+  const rows=Array.isArray(cache.profiles)?cache.profiles:[];
+
+  if(!rows.length){
+    return alert('No staff profiles could be loaded. Please refresh the page and try again.');
+  }
 
   openModal('KTBS Staff & Roles',`
     <div class="page-card">
