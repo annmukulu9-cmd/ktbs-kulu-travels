@@ -10,7 +10,7 @@ const money=n=>'KES '+Number(n||0).toLocaleString('en-KE');
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const today=()=>new Date().toISOString().slice(0,10);
 const isAdmin=()=>String(profile?.role||'').toLowerCase()==='admin';
-const profileName=id=>cache.profiles.find(p=>p.id===id)?.full_name||'—';
+const profileName=id=>{const p=cache.profiles.find(x=>x.id===id);return String(p?.full_name||'').trim()||'Name not set';};
 const clientById=id=>cache.clients.find(c=>c.id===id);
 const quoteById=id=>cache.quotations.find(q=>q.id===id);
 const bookingById=id=>cache.bookings.find(b=>b.id===id);
@@ -51,7 +51,7 @@ function render(){
 function dashboardPage(){
  const rows=cache.bookings.map(financeForBooking);const sales=rows.reduce((a,b)=>a+b.selling,0),paid=rows.reduce((a,b)=>a+b.clientPaid,0),cost=rows.reduce((a,b)=>a+b.cost,0),exp=rows.reduce((a,b)=>a+b.exp,0);
  const upcoming=cache.bookings.filter(b=>b.departure&&b.departure>=today()&&!['Cancelled','COMPLETED'].includes(b.status)).length;
- $('content').innerHTML=`<div class="welcome"><div><h1>Welcome, ${esc(profile?.full_name||me?.email||'Kulu Team')}</h1><p>Live Kulu Travels business overview.</p></div><div class="date"><b>${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</b><br>Curated journeys. Seamless operations.</div></div>
+ $('content').innerHTML=`<div class="welcome"><div><h1>Welcome, ${esc(String(profile?.full_name||'').trim()||'Kulu Team')}</h1><p>Live Kulu Travels business overview.</p></div><div class="date"><b>${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</b><br>Curated journeys. Seamless operations.</div></div>
  <div class="grid stats">
  ${stat('Total Clients',cache.clients.length,'Live client master')}${stat('Active Bookings',cache.bookings.filter(b=>!['Cancelled','COMPLETED'].includes(b.status)).length,'Current bookings')}${stat('Upcoming Travel',upcoming,'Future departures')}${stat('Client Payments Outstanding',money(sales-paid),'Selling less client payments')}${stat('Supplier Balances',money(cost-rows.reduce((a,b)=>a+b.supplierPaid,0)),'Supplier cost less paid')}${stat('Revenue (YTD)',money(sales),'From bookings')}${stat('Gross Profit (YTD)',money(sales-cost),'Selling less supplier cost')}${stat('Net Profit (YTD)',money(sales-cost-exp),'Gross profit less other expenses')}
  </div>
@@ -167,8 +167,8 @@ async function newClient(existing=null){
  const c=existing||{name:'',phone:'',email:'',nationality:'Kenyan',passport:'',destination:'',departure:'',return_date:'',adults:1,children:0,budget:0,lead_source:'Website',consultant_id:me?.id||'',status:'New Enquiry',remarks:''};
  const consultantOpts=isAdmin()
   ? (cache.profiles||[]).map(p=>`<option value="${p.id}" ${p.id===c.consultant_id?'selected':''}>${esc(p.full_name||p.id)}</option>`).join('')
-  : `<option value="${me?.id||''}" selected>${esc(profile?.full_name||me?.email||'Current User')}</option>`;
- openModal(existing?'Edit Client':'Register Client',`<form id="clientForm"><div class="form-grid"><label>Client Name<input name="name" value="${esc(c.name)}" required></label><label>Phone Number<input name="phone" value="${esc(c.phone||'')}" required></label><label>Email Address<input name="email" value="${esc(c.email||'')}"></label><label>Nationality<input name="nationality" value="${esc(c.nationality||'')}"></label><label>Passport Number<input name="passport" value="${esc(c.passport||'')}"></label><label>Destination<input name="destination" value="${esc(c.destination||'')}"></label><label>Departure Date<input type="date" name="departure" value="${c.departure||''}"></label><label>Return Date<input type="date" name="return_date" value="${c.return_date||''}"></label><label>Adults<input type="number" min="1" name="adults" value="${c.adults||1}"></label><label>Children<input type="number" min="0" name="children" value="${c.children||0}"></label><label>Budget (KES)<input type="number" min="0" name="budget" value="${c.budget||0}"></label><label>Lead Source<select name="lead_source">${['Website','Referral','Social Media','Walk-in','Other'].map(x=>`<option ${c.lead_source===x?'selected':''}>${x}</option>`).join('')}</select></label><label>Consultant${isAdmin()?`<select name="consultant_id">${consultantOpts}</select>`:`<input value="${esc(profile?.full_name||me?.email||'Current User')}" readonly><input type="hidden" name="consultant_id" value="${me?.id||''}">`}</label><label>Status<select name="status">${STATUS.map(x=>`<option ${c.status===x?'selected':''}>${x}</option>`).join('')}</select></label><label class="wide">Remarks<textarea name="remarks">${esc(c.remarks||'')}</textarea></label></div><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Client</button></div></form>`);
+  : `<option value="${me?.id||''}" selected>${esc(String(profile?.full_name||'').trim()||'Current User')}</option>`;
+ openModal(existing?'Edit Client':'Register Client',`<form id="clientForm"><div class="form-grid"><label>Client Name<input name="name" value="${esc(c.name)}" required></label><label>Phone Number<input name="phone" value="${esc(c.phone||'')}" required></label><label>Email Address<input name="email" value="${esc(c.email||'')}"></label><label>Nationality<input name="nationality" value="${esc(c.nationality||'')}"></label><label>Passport Number<input name="passport" value="${esc(c.passport||'')}"></label><label>Destination<input name="destination" value="${esc(c.destination||'')}"></label><label>Departure Date<input type="date" name="departure" value="${c.departure||''}"></label><label>Return Date<input type="date" name="return_date" value="${c.return_date||''}"></label><label>Adults<input type="number" min="1" name="adults" value="${c.adults||1}"></label><label>Children<input type="number" min="0" name="children" value="${c.children||0}"></label><label>Budget (KES)<input type="number" min="0" name="budget" value="${c.budget||0}"></label><label>Lead Source<select name="lead_source">${['Website','Referral','Social Media','Walk-in','Other'].map(x=>`<option ${c.lead_source===x?'selected':''}>${x}</option>`).join('')}</select></label><label>Consultant${isAdmin()?`<select name="consultant_id">${consultantOpts}</select>`:`<input value="${esc(String(profile?.full_name||'').trim()||'Current User')}" readonly><input type="hidden" name="consultant_id" value="${me?.id||''}">`}</label><label>Status<select name="status">${STATUS.map(x=>`<option ${c.status===x?'selected':''}>${x}</option>`).join('')}</select></label><label class="wide">Remarks<textarea name="remarks">${esc(c.remarks||'')}</textarea></label></div><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Client</button></div></form>`);
  $('clientForm').onsubmit=async e=>{e.preventDefault();if(existing&&!isAdmin())return alert('Only an administrator can edit saved clients.');const f=Object.fromEntries(new FormData(e.target));const payload={...f,departure:f.departure||null,return_date:f.return_date||null,adults:+f.adults||1,children:+f.children||0,budget:+f.budget||0,consultant_id:isAdmin()?(f.consultant_id||null):me.id,updated_by:me.id};if(existing){const r=await sb.from('clients').update(payload).eq('id',existing.id);if(r.error)return alert(r.error.message)}else{payload.client_code=await nextClientCode();payload.created_by=me.id;const r=await sb.from('clients').insert(payload);if(r.error)return alert(r.error.message)}await refresh();closeModal();go('clients')}
 }
 function editClient(id){const c=clientById(id);if(c)newClient(c)}
@@ -200,7 +200,7 @@ async function saveServiceFromQuote(){const name=($('quoteNewService')?.value||'
 async function newQuotation(existing=null){
  if(existing&&!isAdmin())return alert('Only an administrator can edit saved quotations.');
  const q=existing||{};const clients=cache.clients.map(c=>`<option value="${c.id}" ${c.id===q.client_id?'selected':''}>${esc(c.name)} — ${esc(c.client_code||'')}</option>`).join('');const items=existing?quoteItemsFor(existing.id):[{}];
- openModal(existing?'Edit Quotation':'Create Quotation',`<form id="qForm"><div class="form-grid"><label>Client <select name="client_id" id="qClientId"><option value="">Select existing client…</option>${clients}</select></label><label>Client ID <input id="qClientIdText" readonly></label><label>Phone <input id="qPhone" readonly></label><label>Email <input id="qEmail" readonly></label><label>Destination <input name="destination" id="qDestination" value="${esc(q.destination||'')}"></label><label>Consultant ${isAdmin()?`<select name="consultant_id">${(cache.profiles.length?cache.profiles:[profile]).map(p=>`<option value="${p?.id||''}" ${p?.id===q.consultant_id?'selected':''}>${esc(p?.full_name||me?.email||'')}</option>`).join('')}</select>`:`<input value="${esc(profile?.full_name||me?.email||'Current User')}" readonly><input type="hidden" name="consultant_id" value="${me?.id||''}">`}</label><label>Departure Date <input type="date" name="departure" id="qDeparture" value="${q.departure||''}"></label><label>Return Date <input type="date" name="return_date" id="qReturn" value="${q.return_date||''}"></label><label>Adults <input type="number" min="1" name="adults" id="qAdults" value="${q.adults||1}"></label><label>Children <input type="number" min="0" name="children" id="qChildren" value="${q.children||0}"></label></div><div id="selectedClient" class="card selected-client"></div><h4>Services / Hotels / Travel Items</h4><div id="quoteItems">${items.map(quoteRow).join('')}</div><div class="inline-add"><input id="quoteNewService" placeholder="New service / travel item"><button type="button" onclick="saveServiceFromQuote()">＋ Save to Services</button><button type="button" onclick="addQuoteItem()">＋ Add another item</button></div><div class="form-grid" style="margin-top:12px"><label>Discount (KES)<input type="number" name="discount" value="${q.discount||0}" min="0"></label><label>Deposit Required (KES)<input type="number" name="deposit" value="${q.deposit||0}" min="0"></label><label>Status<select name="status">${STATUS.map(x=>`<option ${q.status===x?'selected':''}>${x}</option>`).join('')}</select></label></div><div class="card total-box"><div><b>Subtotal</b><b id="qSubtotal">KES 0</b></div><div><b>Discount</b><b id="qDiscount">KES 0</b></div><div><b>Total</b><b id="qTotal">KES 0</b></div></div><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">${existing?'Save Quotation':'Save Quotation → Create Booking'}</button></div></form>`);
+ openModal(existing?'Edit Quotation':'Create Quotation',`<form id="qForm"><div class="form-grid"><label>Client <select name="client_id" id="qClientId"><option value="">Select existing client…</option>${clients}</select></label><label>Client ID <input id="qClientIdText" readonly></label><label>Phone <input id="qPhone" readonly></label><label>Email <input id="qEmail" readonly></label><label>Destination <input name="destination" id="qDestination" value="${esc(q.destination||'')}"></label><label>Consultant ${isAdmin()?`<select name="consultant_id">${(cache.profiles.length?cache.profiles:[profile]).map(p=>`<option value="${p?.id||''}" ${p?.id===q.consultant_id?'selected':''}>${esc(String(p?.full_name||'').trim()||'Name not set')}</option>`).join('')}</select>`:`<input value="${esc(String(profile?.full_name||'').trim()||'Current User')}" readonly><input type="hidden" name="consultant_id" value="${me?.id||''}">`}</label><label>Departure Date <input type="date" name="departure" id="qDeparture" value="${q.departure||''}"></label><label>Return Date <input type="date" name="return_date" id="qReturn" value="${q.return_date||''}"></label><label>Adults <input type="number" min="1" name="adults" id="qAdults" value="${q.adults||1}"></label><label>Children <input type="number" min="0" name="children" id="qChildren" value="${q.children||0}"></label></div><div id="selectedClient" class="card selected-client"></div><h4>Services / Hotels / Travel Items</h4><div id="quoteItems">${items.map(quoteRow).join('')}</div><div class="inline-add"><input id="quoteNewService" placeholder="New service / travel item"><button type="button" onclick="saveServiceFromQuote()">＋ Save to Services</button><button type="button" onclick="addQuoteItem()">＋ Add another item</button></div><div class="form-grid" style="margin-top:12px"><label>Discount (KES)<input type="number" name="discount" value="${q.discount||0}" min="0"></label><label>Deposit Required (KES)<input type="number" name="deposit" value="${q.deposit||0}" min="0"></label><label>Status<select name="status">${STATUS.map(x=>`<option ${q.status===x?'selected':''}>${x}</option>`).join('')}</select></label></div><div class="card total-box"><div><b>Subtotal</b><b id="qSubtotal">KES 0</b></div><div><b>Discount</b><b id="qDiscount">KES 0</b></div><div><b>Total</b><b id="qTotal">KES 0</b></div></div><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">${existing?'Save Quotation':'Save Quotation → Create Booking'}</button></div></form>`);
  if(q.client_id)fillQuoteClient();$('qClientId').onchange=fillQuoteClient;$('qForm').addEventListener('input',calcQuote);calcQuote();
  $('qForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),c=clientById(f.client_id);if(!c)return alert('Please select a client.');if(!isAdmin())f.consultant_id=c.consultant_id||me.id;const rows=[...document.querySelectorAll('.quote-row')].map(r=>{const sel=r.querySelector('[name=service_id]'),name=r.querySelector('[name=service_name]').value.trim()||sel.selectedOptions[0]?.textContent||'Other';return {service_id:sel.value||null,service_name:name,description:r.querySelector('[name=description]').value,qty:+r.querySelector('[name=qty]').value||1,unit_amount:+r.querySelector('[name=unit_amount]').value||0}});const subtotal=rows.reduce((s,x)=>s+x.qty*x.unit_amount,0),total=Math.max(0,subtotal-(+f.discount||0));
   if(existing){const r=await sb.from('quotations').update({client_id:c.id,consultant_id:f.consultant_id||null,destination:f.destination,departure:f.departure||null,return_date:f.return_date||null,adults:+f.adults||1,children:+f.children||0,discount:+f.discount||0,deposit:+f.deposit||0,total,status:f.status,updated_by:me.id}).eq('id',existing.id);if(r.error)return alert(r.error.message);const d=await sb.from('quotation_items').delete().eq('quotation_id',existing.id);if(d.error)return alert(d.error.message);const ir=await sb.from('quotation_items').insert(rows.map(x=>({...x,quotation_id:existing.id})));if(ir.error)return alert(ir.error.message);const br=await sb.from('bookings').update({client_id:c.id,consultant_id:f.consultant_id||null,destination:f.destination,departure:f.departure||null,return_date:f.return_date||null,selling_amount:total,status:f.status}).eq('quotation_id',existing.id);if(br.error)return alert(br.error.message);
@@ -1441,7 +1441,7 @@ function settingsPage(){$('content').innerHTML=`<div class="page-grid"><div clas
           ${rows.map(x=>`
             <tr>
               <td>
-                <b>${esc(x.full_name||'')}</b>
+                <b>\${esc(String(x.full_name||'').trim()||'Name not set')}</b>
                 ${x.id===me?.id
                   ? '<br><small>Current user</small>'
                   : ''
@@ -1461,6 +1461,12 @@ function settingsPage(){$('content').innerHTML=`<div class="page-grid"><div clas
 
               <td>
                 <div class="actions">
+
+                  <button
+                    class="link-btn"
+                    onclick="editStaffName('${x.id}')">
+                    Edit Name
+                  </button>
 
                   <button
                     class="link-btn"
@@ -1510,6 +1516,40 @@ function settingsPage(){$('content').innerHTML=`<div class="page-grid"><div clas
     </div>
   `);
 }
+async function editStaffName(id){
+  if(!isAdmin())return;
+
+  const staff=cache.profiles.find(x=>x.id===id);
+  if(!staff)return alert('Staff profile not found.');
+
+  openModal('Edit Staff Name',`
+    <form id="staffNameForm">
+      <label>
+        Full Name
+        <input name="full_name" value="${esc(staff.full_name||'')}" required>
+      </label>
+
+      <div class="actions">
+        <button type="button" onclick="closeModal()">Cancel</button>
+        <button class="primary">Save Name</button>
+      </div>
+    </form>
+  `);
+
+  $('staffNameForm').onsubmit=async e=>{
+    e.preventDefault();
+    const full_name=String(new FormData(e.target).get('full_name')||'').trim();
+    if(!full_name)return alert('Full Name is required.');
+
+    const r=await sb.from('profiles').update({full_name}).eq('id',id);
+    if(r.error)return alert(r.error.message);
+
+    await refresh();
+    closeModal();
+    showStaff();
+  };
+}
+
 async function toggleStaffStatus(id,current){
   if(!isAdmin())return;
 
@@ -1556,8 +1596,8 @@ async function enterApp(user){
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
 
-  $('userName').textContent=profile.full_name||user.email||'Staff';
-  $('avatar').textContent=(profile.full_name||user.email||'K').charAt(0).toUpperCase();
+  $('userName').textContent=String(profile.full_name||'').trim()||'Staff';
+  $('avatar').textContent=(String(profile.full_name||'').trim()||'S').charAt(0).toUpperCase();
   $('roleBadge').textContent=(profile.role||'consultant').toUpperCase();
 
   await loadData();
