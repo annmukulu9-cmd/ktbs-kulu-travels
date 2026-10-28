@@ -22,10 +22,14 @@ function tableWrap(html){return `<div class="page-card">${html}</div>`}
 function stat(label,value,note=''){return `<div class="card"><div class="stat-label">${esc(label)}</div><div class="stat-value">${value}</div><div class="stat-note">${esc(note)}</div></div>`}
 
 async function q(table,select='*'){const {data,error}=await sb.from(table).select(select);if(error)throw error;return data||[]}
+async function loadBookings(){
+ if(isAdmin()){const {data,error}=await sb.rpc('admin_get_bookings');if(error)throw error;return data||[];}
+ const {data,error}=await sb.from('bookings').select('id,booking_no,quotation_id,client_id,consultant_id,destination,departure,return_date,supplier_id,supplier_name,hotel_id,hotel_name,status,selling_amount,reference,notes,booking_date,created_at,created_by,updated_at,updated_by');if(error)throw error;return data||[];
+}
 async function loadData(){
  const [clients,quotations,quotation_items,bookings,suppliers,hotels,services,history,expenses,payments,supplierPayments]=await Promise.all([
-  q('clients'),q('quotations'),q('quotation_items'),q('bookings'),q('suppliers'),q('hotels'),q('services'),q('travel_history'),
-  isAdmin()?q('expenses'):Promise.resolve([]),q('client_payments'),q('supplier_payments')
+  q('clients'),q('quotations'),q('quotation_items'),loadBookings(),q('suppliers'),q('hotels'),q('services'),q('travel_history'),
+  isAdmin()?q('expenses'):Promise.resolve([]),q('client_payments'),isAdmin()?q('supplier_payments'):Promise.resolve([])
  ]);
  let profiles=[];
 try{
@@ -318,13 +322,7 @@ async function editBooking(b){
                  min="0">
         </label>
 
-        <label>
-          Supplier Cost
-          <input type="number"
-                 name="supplier_cost"
-                 value="${b.supplier_cost||0}"
-                 min="0">
-        </label>
+        ${isAdmin()?`<label>Supplier Cost<input type="number" name="supplier_cost" value="${b.supplier_cost||0}" min="0"></label><label>Supplier Paid<input type="number" name="supplier_paid" value="${f.supplierPaid||0}" min="0"></label><label>Other Expenses<input type="number" name="other_expenses" value="${b.other_expenses||0}" min="0"></label>`:''}
 
         <label>
           Supplier Paid
@@ -397,27 +395,8 @@ async function editBooking(b){
       </div>
 
       <div class="card total-box">
-
-        <div>
-          <b>Client Balance</b>
-          <b id="ebalance">${money(f.balance)}</b>
-        </div>
-
-        <div>
-          <b>Supplier Pending</b>
-          <b id="esbalance">${money(f.supplierPending)}</b>
-        </div>
-
-        <div>
-          <b>Gross Profit</b>
-          <b id="eprofit">${money(f.gross)}</b>
-        </div>
-
-        <div>
-          <b>Net Profit</b>
-          <b id="enprofit">${money(f.net)}</b>
-        </div>
-
+        <div><b>Client Balance</b><b id="ebalance">${money(f.balance)}</b></div>
+        ${isAdmin()?`<div><b>Supplier Pending</b><b id="esbalance">${money(f.supplierPending)}</b></div><div><b>Gross Profit</b><b id="eprofit">${money(f.gross)}</b></div><div><b>Net Profit</b><b id="enprofit">${money(f.net)}</b></div>`:''}
       </div>
 
       <div class="actions">
@@ -431,31 +410,18 @@ async function editBooking(b){
   `);
 
   $('editBook').addEventListener('input',()=>{
-
-    const x=Object.fromEntries(
-      new FormData($('editBook'))
-    );
-
+    const x=Object.fromEntries(new FormData($('editBook')));
     const selling=Number(x.selling_amount)||0;
     const clientPaid=Number(x.client_paid)||0;
-    const supplierCost=Number(x.supplier_cost)||0;
-    const supplierPaid=Number(x.supplier_paid)||0;
-    const expenses=Number(x.other_expenses)||0;
-  
-
- 
-
-    $('ebalance').textContent=
-      money(selling-clientPaid);
-
-    $('esbalance').textContent=
-      money(supplierCost-supplierPaid);
-
-    $('eprofit').textContent=
-      money(selling-supplierCost);
-
-    $('enprofit').textContent=
-      money(selling-supplierCost-expenses);
+    $('ebalance').textContent=money(selling-clientPaid);
+    if(isAdmin()){
+      const supplierCost=Number(x.supplier_cost)||0;
+      const supplierPaid=Number(x.supplier_paid)||0;
+      const expenses=Number(x.other_expenses)||0;
+      $('esbalance').textContent=money(supplierCost-supplierPaid);
+      $('eprofit').textContent=money(selling-supplierCost);
+      $('enprofit').textContent=money(selling-supplierCost-expenses);
+    }
   });
 
   $('editBook').onsubmit=async e=>{
@@ -465,6 +431,12 @@ async function editBooking(b){
     const x=Object.fromEntries(
       new FormData(e.target)
     );
+
+    if(!isAdmin()){
+      const update=await sb.from('bookings').update({selling_amount:Number(x.selling_amount)||0,status:x.status,reference:x.reference||'',notes:x.notes||'',updated_by:me.id}).eq('id',b.id);
+      if(update.error)return alert(update.error.message);
+      await refresh();closeModal();go('bookings');return;
+    }
 
     const selling=Number(x.selling_amount)||0;
     const clientPaid=Number(x.client_paid)||0;
@@ -1127,7 +1099,7 @@ async function recordPayment(){
     /* Get the booking */
     const {data:b,error:bookingError}=await sb
       .from('bookings')
-      .select('*')
+      .select('id,client_id,quotation_id,status,selling_amount')
       .eq('id',f.booking_id)
       .single();
 
