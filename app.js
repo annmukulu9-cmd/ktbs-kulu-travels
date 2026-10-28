@@ -24,7 +24,8 @@ function stat(label,value,note=''){return `<div class="card"><div class="stat-la
 async function q(table,select='*'){const {data,error}=await sb.from(table).select(select);if(error)throw error;return data||[]}
 async function loadData(){
  const [clients,quotations,quotation_items,bookings,suppliers,hotels,services,history,expenses,payments,supplierPayments]=await Promise.all([
-  q('clients'),q('quotations'),q('quotation_items'),q('bookings'),q('suppliers'),q('hotels'),q('services'),q('travel_history'),q('expenses'),q('client_payments'),q('supplier_payments')
+  q('clients'),q('quotations'),q('quotation_items'),q('bookings'),q('suppliers'),q('hotels'),q('services'),q('travel_history'),
+  isAdmin()?q('expenses'):Promise.resolve([]),q('client_payments'),q('supplier_payments')
  ]);
  let profiles=[];
 try{
@@ -43,12 +44,25 @@ function sumsForBooking(id){
 }
 function financeForBooking(b){const s=sumsForBooking(b.id),selling=Number(b.selling_amount||0),cost=Number(b.supplier_cost||0),exp=Number(b.other_expenses||0);return {...s,selling,cost,exp,balance:selling-s.clientPaid,supplierPending:cost-s.supplierPaid,gross:selling-cost,net:selling-cost-exp}}
 function render(){
- document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+ document.querySelectorAll('#nav button').forEach(b=>{
+   const restricted=['finance','reports'].includes(b.dataset.page);
+   b.classList.toggle('hidden',restricted&&!isAdmin());
+   b.classList.toggle('active',b.dataset.page===page);
+ });
+ if(!isAdmin()&&['finance','reports'].includes(page))page='dashboard';
  $('pageTitle').textContent=page==='history'?'Travel History':page[0].toUpperCase()+page.slice(1);
  const fn=window[page+'Page'];if(fn)fn();
 }
 
 function dashboardPage(){
+ if(!isAdmin()){
+  const mine=cache.bookings.filter(b=>clientById(b.client_id)?.consultant_id===me?.id);
+  const upcoming=mine.filter(b=>b.departure&&b.departure>=today()&&!['Cancelled','COMPLETED'].includes(b.status)).length;
+  const sales=mine.reduce((n,b)=>n+Number(b.selling_amount||0),0);
+  const paid=mine.reduce((n,b)=>n+financeForBooking(b).clientPaid,0);
+  $('content').innerHTML=`<div class="welcome"><div><h1>Welcome, ${esc(String(profile?.full_name||'').trim()||'Kulu Team')}</h1><p>Your assigned clients and bookings.</p></div></div><div class="grid stats">${stat('Assigned Clients',cache.clients.filter(c=>c.consultant_id===me?.id).length,'Your client portfolio')}${stat('Active Bookings',mine.filter(b=>!['Cancelled','COMPLETED'].includes(b.status)).length,'Your bookings')}${stat('Upcoming Travel',upcoming,'Future departures')}${stat('Client Selling Value',money(sales),'Your assigned bookings')}${stat('Client Payments Received',money(paid),'Your assigned bookings')}${stat('Client Balance Outstanding',money(sales-paid),'Your assigned bookings')}</div><div class="grid two"><div class="card"><div class="section-head"><h3>Your Recent Bookings</h3><button class="link-btn" onclick="go('bookings')">View All</button></div>${bookingTable(5)}</div><div class="card"><div class="section-head"><h3>Quick Actions</h3></div><div class="grid quick"><button onclick="newClient()">＋ Add New Client</button><button onclick="newQuotation()">▤ Create Quotation</button><button onclick="newBooking()">▣ New Booking</button><button onclick="recordPayment()">▣ Record Client Payment</button><button onclick="recordSupplierPayment()">◇ Record Supplier Payment</button></div></div></div>`;
+  return;
+ }
  const rows=cache.bookings.map(financeForBooking);const sales=rows.reduce((a,b)=>a+b.selling,0),paid=rows.reduce((a,b)=>a+b.clientPaid,0),cost=rows.reduce((a,b)=>a+b.cost,0),exp=rows.reduce((a,b)=>a+b.exp,0);
  const upcoming=cache.bookings.filter(b=>b.departure&&b.departure>=today()&&!['Cancelled','COMPLETED'].includes(b.status)).length;
  $('content').innerHTML=`<div class="welcome"><div><h1>Welcome, ${esc(String(profile?.full_name||'').trim()||'Kulu Team')}</h1><p>Live Kulu Travels business overview.</p></div><div class="date"><b>${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</b><br>Curated journeys. Seamless operations.</div></div>
@@ -69,6 +83,7 @@ function filterClient(){const v=($('clientFilter')?.value||'').toLowerCase();$('
 async function openClient(id){
   const c=clientById(id);
   if(!c)return;
+  if(!isAdmin()&&c.consultant_id!==me?.id)return alert('You can only open clients assigned to you.');
 
   const hs=cache.history
     .filter(h=>h.client_id===id)
@@ -242,53 +257,9 @@ function openQuotation(id){
 function editQuotation(id){openQuotation(id)}
 
 function bookingTable(n=999,status=''){
-  const arr=cache.bookings.filter(b=>!status||b.status===status);
-
-  return `<table class="booking-table">
-    <thead>
-      <tr>
-        <th>Action</th>
-        <th>Booking</th>
-        <th>Client / ID</th>
-        <th>Destination</th>
-        <th>Travel Date</th>
-       <th>Selling</th>
-<th>Client Paid</th>
-<th>Balance</th>
-<th>Supplier Pending</th>
-<th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${arr.slice(0,n).map(b=>{
-        const c=clientById(b.client_id);
-        const f=financeForBooking(b);
-
-        return `<tr>
-          <td>
-            <button class="link-btn" onclick="openBooking('${b.id}')">Open</button>
-          </td>
-          <td>
-            <b>${esc(b.booking_no)}</b><br>
-            <small>${esc(quoteById(b.quotation_id)?.quotation_no||'')}</small>
-          </td>
-          <td>
-            ${esc(c?.name||'—')}<br>
-            <small>${esc(c?.client_code||'')}</small>
-          </td>
-          <td>${esc(b.destination||'')}</td>
-          <td>${esc(b.departure||'—')}</td>
-          <td>${money(f.selling)}</td>
-          <td>${money(f.clientPaid)}</td>
-         <td>${money(f.balance)}</td>
-<td>${money(f.supplierPending)}</td>
-<td>${badge(b.status)}</td>
-        </tr>`;
-      }).join('')}
-    </tbody>
-  </table>`;
+ const arr=cache.bookings.filter(b=>(isAdmin()||clientById(b.client_id)?.consultant_id===me?.id)&&(!status||b.status===status));
+ return `<table class="booking-table"><thead><tr><th>Action</th><th>Booking</th><th>Client / ID</th><th>Destination</th><th>Travel Date</th><th>Selling</th><th>Client Paid</th><th>Balance</th>${isAdmin()?'<th>Supplier Pending</th>':''}<th>Status</th></tr></thead><tbody>${arr.slice(0,n).map(b=>{const c=clientById(b.client_id);const f=financeForBooking(b);return `<tr><td><button class="link-btn" onclick="openBooking('${b.id}')">Open</button></td><td><b>${esc(b.booking_no)}</b><br><small>${esc(quoteById(b.quotation_id)?.quotation_no||'')}</small></td><td>${esc(c?.name||'—')}<br><small>${esc(c?.client_code||'')}</small></td><td>${esc(b.destination||'')}</td><td>${esc(b.departure||'—')}</td><td>${money(f.selling)}</td><td>${money(f.clientPaid)}</td><td>${money(f.balance)}</td>${isAdmin()?'<td>'+money(f.supplierPending)+'</td>':''}<td>${badge(b.status)}</td></tr>`;}).join('')}</tbody></table>`;
 }
-
 function bookingsPage(){$('content').innerHTML=`<div class="toolbar"><button class="primary" onclick="newBooking()">+ New Booking</button><select id="bookingStatus" onchange="filterBookings()"><option value="">All statuses</option>${STATUS.map(x=>`<option>${x}</option>`).join('')}</select></div>${tableWrap(`<div id="bookingTable">${bookingTable()}</div>`)}`}
 function filterBookings(){$('bookingTable').innerHTML=bookingTable(999,$('bookingStatus').value)}
 function partnerOptions(list,selected){return list.map(x=>`<option value="${x.id}" ${x.id===selected?'selected':''}>${esc(x.name)}</option>`).join('')}
@@ -1080,9 +1051,10 @@ async function newHotel(){openModal('Add Hotel',`<form id="hForm"><div class="fo
 function newService(){openModal('Add Service / Travel Item',`<form id="svForm"><label>Service Name<input name="name" required></label><label>Category<input name="category" placeholder="Flights, Safari, Accommodation…"></label><label>Destination<input name="destination"></label><label>Default Amount (KES)<input type="number" name="default_amount" value="0"></label><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Service</button></div></form>`);$('svForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));f.default_amount=+f.default_amount||0;f.created_by=me.id;const r=await sb.from('services').insert(f);if(r.error)return alert(r.error.message);await refresh();closeModal();go('services')}}
 async function deleteMaster(table,id){if(!isAdmin())return;if(!confirm('Delete this master item?'))return;const r=await sb.from(table).delete().eq('id',id);if(r.error)return alert(r.error.message);await refresh();render()}
 
-function financePage(){const rows=cache.bookings.map(financeForBooking),sales=rows.reduce((a,b)=>a+b.selling,0),paid=rows.reduce((a,b)=>a+b.clientPaid,0),cost=rows.reduce((a,b)=>a+b.cost,0),sp=rows.reduce((a,b)=>a+b.supplierPaid,0),ex=rows.reduce((a,b)=>a+b.exp,0);$('content').innerHTML=`<div class="grid stats">${stat('Selling Amount',money(sales),'Live bookings')}${stat('Client Paid',money(paid),'Receipts recorded')}${stat('Client Balance',money(sales-paid),'Outstanding')}${stat('Supplier Cost',money(cost),'Committed cost')}${stat('Supplier Paid',money(sp),'Paid to suppliers')}${stat('Supplier Pending',money(cost-sp),'Outstanding')}${stat('Gross Profit',money(sales-cost),'Selling less supplier cost')}${stat('Net Profit',money(sales-cost-ex),'After other expenses')}</div>${tableWrap(`<div class="section-head"><h3>Booking Finance</h3><div><button class="primary" onclick="recordPayment()">+ Client Payment</button> <button onclick="recordSupplierPayment()">+ Supplier Payment</button></div></div>${bookingTable()}`)}`}
+function financePage(){if(!isAdmin()){alert('Finance is available to administrators only.');go('dashboard');return;}const rows=cache.bookings.map(financeForBooking),sales=rows.reduce((a,b)=>a+b.selling,0),paid=rows.reduce((a,b)=>a+b.clientPaid,0),cost=rows.reduce((a,b)=>a+b.cost,0),sp=rows.reduce((a,b)=>a+b.supplierPaid,0),ex=rows.reduce((a,b)=>a+b.exp,0);$('content').innerHTML=`<div class="grid stats">${stat('Selling Amount',money(sales),'Live bookings')}${stat('Client Paid',money(paid),'Receipts recorded')}${stat('Client Balance',money(sales-paid),'Outstanding')}${stat('Supplier Cost',money(cost),'Committed cost')}${stat('Supplier Paid',money(sp),'Paid to suppliers')}${stat('Supplier Pending',money(cost-sp),'Outstanding')}${stat('Gross Profit',money(sales-cost),'Selling less supplier cost')}${stat('Net Profit',money(sales-cost-ex),'After other expenses')}</div>${tableWrap(`<div class="section-head"><h3>Booking Finance</h3><div><button class="primary" onclick="recordPayment()">+ Client Payment</button> <button onclick="recordSupplierPayment()">+ Supplier Payment</button></div></div>${bookingTable()}`)}`}
 async function recordPayment(){
-  if(!cache.bookings.length){
+  const allowedBookings=cache.bookings.filter(b=>isAdmin()||clientById(b.client_id)?.consultant_id===me?.id);
+  if(!allowedBookings.length){
     return alert('No bookings available.');
   }
 
@@ -1093,7 +1065,7 @@ async function recordPayment(){
       <label>
         Booking
         <select name="booking_id">
-          ${cache.bookings.map(b=>`
+          ${allowedBookings.map(b=>`
             <option value="${b.id}">
               ${esc(b.booking_no)} — ${esc(clientById(b.client_id)?.name||'')}
             </option>
@@ -1245,11 +1217,17 @@ async function recordPayment(){
     go('finance');
   };
 }
-async function recordSupplierPayment(){if(!cache.bookings.length)return alert('No bookings available.');openModal('Record Supplier Payment',`<form id="spForm"><label>Booking<select name="booking_id">${cache.bookings.map(b=>`<option value="${b.id}">${esc(b.booking_no)} — ${esc(clientById(b.client_id)?.name||'')}</option>`).join('')}</select></label><label>Payment Amount (KES)<input name="amount" type="number" min="0" required></label><label>Payment Date<input name="payment_date" type="date" value="${today()}"></label><label>Reference<input name="reference"></label><label>Notes<textarea name="notes"></textarea></label><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Record Payment</button></div></form>`);$('spForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));const r=await sb.from('supplier_payments').insert({...f,amount:+f.amount||0,created_by:me.id});if(r.error)return alert(r.error.message);await refresh();closeModal();go('finance')}}
+async function recordSupplierPayment(){
+ const allowed=cache.bookings.filter(b=>isAdmin()||clientById(b.client_id)?.consultant_id===me?.id);
+ if(!allowed.length)return alert('No assigned bookings available.');
+ openModal('Record Supplier / Hotel Payment',`<form id="spForm"><label>Assigned Booking<select name="booking_id" required>${allowed.map(b=>`<option value="${b.id}">${esc(b.booking_no)} — ${esc(clientById(b.client_id)?.name||'')}</option>`).join('')}</select></label><label>Payment Amount (KES)<input name="amount" type="number" min="1" required></label><label>Payment Date<input name="payment_date" type="date" value="${today()}" required></label><label>Reference<input name="reference"></label><label>Notes<textarea name="notes"></textarea></label><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Record Payment</button></div></form>`);
+ $('spForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));const amount=Number(f.amount)||0;if(amount<=0)return alert('Enter a payment amount greater than KES 0.');const r=await sb.from('supplier_payments').insert({...f,amount,created_by:me.id});if(r.error)return alert(r.error.message);await refresh();closeModal();if(isAdmin())go('finance');else go('bookings');};
+}
 
 function historyTable(filter='',arr=cache.history){const f=String(filter||'').toLowerCase(),a=arr.filter(h=>!f||[h.destination,h.services,h.hotel_supplier].join(' ').toLowerCase().includes(f));return `<table class="booking-table"><thead><tr><th>Client</th><th>Destination</th><th>Travel Date</th><th>Experiences / Services</th><th>Hotel / Supplier</th><th>Booking</th><th>Value</th></tr></thead><tbody>${a.map(h=>`<tr><td><b>${esc(clientById(h.client_id)?.name||'—')}</b><br><small>${esc(clientById(h.client_id)?.client_code||'')}</small></td><td>${esc(h.destination||'—')}</td><td>${esc(h.departure||'—')}</td><td>${esc(h.services||'—')}</td><td>${esc(h.hotel_supplier||'—')}</td><td>${esc(bookingById(h.booking_id)?.booking_no||'—')}</td><td>${money(h.travel_value)}</td></tr>`).join('')}</tbody></table>`}
 function historyPage(){$('content').innerHTML=`<div class="toolbar"><input placeholder="Search client, destination or experience…" oninput="$('historyTable').innerHTML=historyTable(this.value)"></div>${tableWrap(`<div id="historyTable">${historyTable()}</div>`)}`}
 function reportsPage(){
+  if(!isAdmin()){alert('Financial reports are available to administrators only.');go('dashboard');return;}
   const rows=cache.bookings.map(financeForBooking);
 
   const gp=rows.reduce((a,b)=>a+b.gross,0);
