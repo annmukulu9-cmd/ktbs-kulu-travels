@@ -25,6 +25,55 @@
     message.textContent = "We'll email you a secure invitation link to set up your account.";
   });
 
+  const inviteForm = $("inviteSetupForm");
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const queryParams = new URLSearchParams(window.location.search);
+  const isInvite = hashParams.get("type") === "invite" || queryParams.get("type") === "invite";
+
+  if (isInvite) {
+    $("app")?.classList.add("hidden");
+    $("login")?.classList.remove("hidden");
+    login?.classList.add("hidden");
+    $("showSignup")?.classList.add("hidden");
+    signup?.classList.add("hidden");
+    $("trialLimits")?.classList.add("hidden");
+    $("showLogin")?.classList.add("hidden");
+    inviteForm?.classList.remove("hidden");
+  }
+
+  inviteForm?.addEventListener("submit", async event => {
+    event.preventDefault();
+    const fields = Object.fromEntries(new FormData(inviteForm).entries());
+    const password = String(fields.new_password || "");
+    const confirm = String(fields.confirm_password || "");
+    const note = $("inviteSetupMessage");
+    const button = $("inviteSetupSubmit");
+    if (password.length < 10) {
+      note.textContent = "Please use at least 10 characters.";
+      note.className = "signup-message error";
+      return;
+    }
+    if (password !== confirm) {
+      note.textContent = "The passwords do not match.";
+      note.className = "signup-message error";
+      return;
+    }
+    button.disabled = true;
+    button.textContent = "Securing account…";
+    const { error } = await supabaseClient.auth.updateUser({ password });
+    if (error) {
+      note.textContent = error.message || "We could not set your password. Please try again.";
+      note.className = "signup-message error";
+      button.disabled = false;
+      button.textContent = "Set Password & Continue";
+      return;
+    }
+    note.textContent = "Password saved. Opening your KTBS workspace…";
+    note.className = "signup-message success";
+    window.history.replaceState({}, document.title, window.location.pathname);
+    window.location.reload();
+  });
+
   signup?.addEventListener("submit", async event => {
     event.preventDefault();
     const form = Object.fromEntries(new FormData(signup).entries());
@@ -45,7 +94,13 @@
       });
       if (error) {
         let detail = "";
-        try { detail = await error.context?.json?.().then(x => x.error || "").catch(() => ""); } catch {}
+        try {
+          const context = error.context;
+          if (context && typeof context.json === "function") {
+            const payload = await context.json();
+            detail = payload.error || "";
+          }
+        } catch {}
         throw new Error(detail || error.message || "Registration could not be completed.");
       }
       if (!data?.success) throw new Error(data?.error || "Registration could not be completed.");
