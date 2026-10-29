@@ -2,7 +2,7 @@ const { createClient } = window.supabase;
 const sb = createClient(window.KTBS_SUPABASE_URL, window.KTBS_SUPABASE_ANON_KEY);
 
 const STATUS=['New Enquiry','Quotation','Confirmed','Partially Paid','Fully Paid','In Progress','COMPLETED','Cancelled'];
-let page='dashboard', me=null, profile=null, organization=null, subscription=null;
+let page='dashboard', me=null, profile=null, organization=null, subscription=null, platformAdmin=false;
 let cache={clients:[],quotations:[],quotation_items:[],bookings:[],suppliers:[],hotels:[],services:[],history:[],expenses:[],payments:[],supplierPayments:[],profiles:[]};
 
 const $=id=>document.getElementById(id);
@@ -51,12 +51,51 @@ function financeForBooking(b){const s=sumsForBooking(b.id),selling=Number(b.sell
 function render(){
  document.querySelectorAll('#nav button').forEach(b=>{
    const restricted=['finance','reports'].includes(b.dataset.page);
-   b.classList.toggle('hidden',restricted&&!isAdmin());
+   if(b.dataset.page==='platform-admin')b.classList.toggle('hidden',!platformAdmin);
+   else b.classList.toggle('hidden',restricted&&!isAdmin());
    b.classList.toggle('active',b.dataset.page===page);
  });
  if(!isAdmin()&&['finance','reports'].includes(page))page='dashboard';
  $('pageTitle').textContent=page==='history'?'Travel History':page[0].toUpperCase()+page.slice(1);
  const fn=window[page+'Page'];if(fn)fn();
+}
+
+
+async function platformAdminPage(){
+ if(!platformAdmin){page='dashboard';return render();}
+ $('content').innerHTML='<div class="page-card"><p>Loading platform workspaces…</p></div>';
+ const {data,error}=await sb.rpc('platform_admin_list_workspaces');
+ if(error){$('content').innerHTML='<div class="page-card"><h3>Could not load workspaces</h3><p>'+esc(error.message)+'</p></div>';return;}
+ const rows=data||[];
+ const plans=[['trial','14-Day Limited Trial'],['starter','KTBS Starter'],['growth','KTBS Growth']];
+ const statuses=[['trial','Trial'],['active','Active'],['trial_expired','Trial Expired'],['past_due','Past Due'],['suspended','Suspended'],['cancelled','Cancelled']];
+ $('content').innerHTML=`<div class="welcome"><div><h1>Platform Administration</h1><p>Manage operator workspaces and subscription access.</p></div><button class="secondary" onclick="platformAdminPage()">Refresh</button></div>
+ <div class="grid stats">${stat('Total Workspaces',rows.length,'All registered operators')}${stat('Active Trials',rows.filter(x=>x.subscription_status==='trial').length,'Trial workspaces')}${stat('Active Subscriptions',rows.filter(x=>x.subscription_status==='active').length,'Access marked active')}${stat('Restricted Workspaces',rows.filter(x=>['trial_expired','past_due','suspended','cancelled'].includes(x.subscription_status)).length,'Read-only / restricted')}</div>
+ <div class="page-card"><div class="section-head"><h3>Operator Workspaces</h3><span class="badge info">Platform Admin Only</span></div>
+ <p class="admin-note">Subscription status changes are manual overrides. No payment gateway is connected yet; only mark a subscription Active after payment or an approved access decision has been verified.</p>
+ <div class="table-scroll"><table><thead><tr><th>Business</th><th>Usage</th><th>Plan</th><th>Status</th><th>Trial ends</th><th>Save</th></tr></thead><tbody>
+ ${rows.map(w=>`<tr><td><b>${esc(w.organization_name)}</b><br><small>${esc(w.country||'')} · ${esc(w.currency||'KES')}</small><br><small>${esc(w.slug||'')}</small></td>
+ <td><small>Staff ${Number(w.staff_count||0)} · Clients ${Number(w.client_count||0)}<br>Quotes ${Number(w.quotation_count||0)} · Bookings ${Number(w.booking_count||0)}</small></td>
+ <td><select id="platformPlan-${w.organization_id}">${plans.map(p=>`<option value="${p[0]}" ${w.plan_code===p[0]?'selected':''}>${p[1]}</option>`).join('')}</select></td>
+ <td><select id="platformStatus-${w.organization_id}">${statuses.map(s=>`<option value="${s[0]}" ${w.subscription_status===s[0]?'selected':''}>${s[1]}</option>`).join('')}</select></td>
+ <td><input type="date" id="platformTrialEnd-${w.organization_id}" value="${w.trial_ends_at?String(w.trial_ends_at).slice(0,10):''}"></td>
+ <td><button class="primary" onclick="savePlatformSubscription('${w.organization_id}')">Save</button></td></tr>`).join('')||'<tr><td colspan="6">No workspaces have been registered yet.</td></tr>'}
+ </tbody></table></div></div>`;
+}
+async function savePlatformSubscription(orgId){
+ if(!platformAdmin)return alert('Platform administrator access required.');
+ const plan=$('platformPlan-'+orgId)?.value;
+ const status=$('platformStatus-'+orgId)?.value;
+ const trialValue=$('platformTrialEnd-'+orgId)?.value;
+ const trialEnd=trialValue?new Date(trialValue+'T23:59:59').toISOString():null;
+ if(status==='trial'&&!trialEnd)return alert('Choose a trial end date before saving a Trial subscription.');
+ if(!confirm('Save this workspace subscription change?'))return;
+ const {error}=await sb.rpc('platform_admin_update_subscription',{
+  p_organization_id:orgId,p_plan_code:plan,p_status:status,p_trial_ends_at:trialEnd,p_current_period_ends_at:null
+ });
+ if(error)return alert('Could not update subscription: '+error.message);
+ alert('Workspace subscription updated.');
+ await platformAdminPage();
 }
 
 function dashboardPage(){
@@ -1528,6 +1567,10 @@ async function enterApp(user){
   }
 
   profile=r.data;
+  const platformResult=await sb.rpc('is_platform_admin');
+  platformAdmin=!platformResult.error&&platformResult.data===true;
+  const platformNav=$('platformAdminNav');
+  if(platformNav)platformNav.classList.toggle('hidden',!platformAdmin);
 
   const orgResult=await sb.rpc('current_organization_id');
   if(orgResult.error || !orgResult.data){
