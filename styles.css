@@ -656,3 +656,5 @@ table{
 .signup-message.error{color:#c94559;font-weight:700}
 #signupSubmit:disabled{opacity:.65;cursor:wait}
 .signup-muted{opacity:.65}
+
+.signup-honeypot{position:absolute!important;left:-10000px!important;top:auto!important;width:1px!important;height:1px!important;overflow:hidden!important}
