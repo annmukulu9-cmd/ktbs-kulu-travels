@@ -87,3 +87,30 @@ While creating or editing a Booking, staff can select an existing Supplier/Hotel
 
 ## Admin & Consultant Access
 Admin has full control and can manage consultants and correct saved records. Consultant saved records are locked and consultants cannot edit them. Consultant management is Admin-only. The prototype includes role/session logic; production deployment should enforce these permissions server-side with authenticated accounts.
+
+## Multi-tenant SaaS foundation (October 2026)
+
+KTBS is being evolved from a single-agency system into a subscription platform for multiple tour and travel operators.
+
+### Database foundation now applied
+- Added an `organizations` table and organization memberships.
+- Created the first organization, **Kulu Travels**, and linked the existing staff accounts to it.
+- Added required `organization_id` ownership to clients, quotations, quotation items, bookings, client payments, supplier payments, expenses, suppliers, hotels, services and travel history.
+- Added organization-aware row-level security policies so each operator's data is separated at the database layer.
+- Added automatic organization assignment for new operational records and prevention of changing a record's organization.
+- Scoped privileged booking access and booking-status synchronization to the active organization.
+- Preserved consultant access to assigned-client records and supplier-payment recording, while restricting supplier-payment visibility and company financial records to organization administrators.
+- Protected organization subscription status and slug from changes by tenant administrators.
+
+### Application changes
+- The signed-in workspace loads the current user's active organization and displays its name in the workspace header.
+- The existing Kulu Travels workspace remains the first tenant.
+
+### Next milestones
+1. Organization setup and profile settings (logo, brand colors, contact details, currency and timezone).
+2. Platform super-admin console and secure tenant onboarding.
+3. Subscription plans, trials, billing and plan limits.
+4. Public trip pages, itineraries, traveller forms and booking requests.
+5. Payment-provider integrations, reminders and advanced travel operations.
+
+**Important:** Public self-service registration, subscription billing and a platform super-admin console have not been implemented yet. Do not market the platform as open for external sign-ups until those phases and cross-tenant security checks are complete.
