@@ -110,6 +110,7 @@ KTBS is being evolved from a single-agency system into a subscription platform f
 
 - Added the subscription-plan catalogue and organization-subscription records.
 - Added a secure Supabase Edge Function, `ktbs-start-trial`, for business-owner invitation and workspace creation. The service-role key remains server-side.
+- Added a protected platform admin console with database-checked access to list operator workspaces and manually manage subscription plan/status. It does not process payments.
 - Added a registration form for business name, owner name, email, country and default currency.
 - Added invite acceptance with a password-setup screen, workspace trial-status badge and dashboard quota usage.
 - Workspace totals use the organization's selected currency.
@@ -123,7 +124,7 @@ KTBS is being evolved from a single-agency system into a subscription platform f
 1. Test Supabase Auth email invitation delivery and confirm the allowed redirect URL.
 2. Test a complete external sign-up, invitation acceptance, password setup and first login.
 3. Test workspace isolation and each trial cap with a separate test operator.
-4. Add a protected platform super-admin console.
+4. Finish testing the protected platform admin console (initial implementation added in October 2026).
 5. Set commercial plan pricing and integrate payment collection (including a suitable Kenya payment method).
 6. Complete cross-tenant and subscription-expiry tests.
 
