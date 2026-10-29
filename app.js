@@ -307,38 +307,24 @@ async function editBooking(b){
         </label>
 
         <label>
-          Selling Amount
+          Client Selling Amount (KES)
           <input type="number"
                  name="selling_amount"
                  value="${b.selling_amount||0}"
-                 min="0">
+                 min="0"
+                 ${isAdmin()?'':'readonly'}>
         </label>
 
         <label>
-          Client Paid
+          Client Payments Received (KES)
           <input type="number"
                  name="client_paid"
                  value="${f.clientPaid||0}"
-                 min="0">
+                 min="0"
+                 ${isAdmin()?'':'readonly'}>
         </label>
 
         ${isAdmin()?`<label>Supplier Cost<input type="number" name="supplier_cost" value="${b.supplier_cost||0}" min="0"></label><label>Supplier Paid<input type="number" name="supplier_paid" value="${f.supplierPaid||0}" min="0"></label><label>Other Expenses<input type="number" name="other_expenses" value="${b.other_expenses||0}" min="0"></label>`:''}
-
-        <label>
-          Supplier Paid
-          <input type="number"
-                 name="supplier_paid"
-                 value="${f.supplierPaid||0}"
-                 min="0">
-        </label>
-
-        <label>
-          Other Expenses
-          <input type="number"
-                 name="other_expenses"
-                 value="${b.other_expenses||0}"
-                 min="0">
-        </label>
 
         <label>
           Supplier
