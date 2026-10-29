@@ -2,7 +2,7 @@ const { createClient } = window.supabase;
 const sb = createClient(window.KTBS_SUPABASE_URL, window.KTBS_SUPABASE_ANON_KEY);
 
 const STATUS=['New Enquiry','Quotation','Confirmed','Partially Paid','Fully Paid','In Progress','COMPLETED','Cancelled'];
-let page='dashboard', me=null, profile=null;
+let page='dashboard', me=null, profile=null, organization=null;
 let cache={clients:[],quotations:[],quotation_items:[],bookings:[],suppliers:[],hotels:[],services:[],history:[],expenses:[],payments:[],supplierPayments:[],profiles:[]};
 
 const $=id=>document.getElementById(id);
@@ -1524,6 +1524,20 @@ async function enterApp(user){
   }
 
   profile=r.data;
+
+  const orgResult=await sb.rpc('current_organization_id');
+  if(orgResult.error || !orgResult.data){
+    await sb.auth.signOut();
+    return alert('No active organization is linked to this account. Please contact your platform administrator.');
+  }
+  const orgRecord=await sb.from('organizations').select('id,name,slug,status').eq('id',orgResult.data).single();
+  if(orgRecord.error || !orgRecord.data){
+    await sb.auth.signOut();
+    return alert('Your organization workspace could not be loaded. Please contact your platform administrator.');
+  }
+  organization=orgRecord.data;
+  const organizationLabel=$('organizationName');
+  if(organizationLabel)organizationLabel.textContent=organization.name;
 
   if(!profile.active){
     return alert('This staff account is inactive.');
