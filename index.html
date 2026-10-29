@@ -32,6 +32,14 @@
       <button id="signupSubmit" class="primary full">Create Trial Workspace</button>
       <small id="signupMessage">We'll email you a secure invitation link to set up your account.</small>
     </form>
+    <form id="inviteSetupForm" class="hidden" style="margin-top:18px">
+      <h2 style="font-size:23px">Secure your KTBS account</h2>
+      <p class="trial-copy">Choose a password to finish setting up your business workspace.</p>
+      <label>Create Password<input name="new_password" type="password" autocomplete="new-password" required minlength="10"></label>
+      <label>Confirm Password<input name="confirm_password" type="password" autocomplete="new-password" required minlength="10"></label>
+      <button id="inviteSetupSubmit" class="primary full">Set Password & Continue</button>
+      <small id="inviteSetupMessage">Use at least 10 characters.</small>
+    </form>
     <div id="trialLimits" class="trial-limits hidden">
       <b>What's included in the trial</b>
       <span>14 days · 2 staff accounts · 100 clients</span>
