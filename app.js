@@ -2,7 +2,7 @@ const { createClient } = window.supabase;
 const sb = createClient(window.KTBS_SUPABASE_URL, window.KTBS_SUPABASE_ANON_KEY);
 
 const STATUS=['New Enquiry','Quotation','Confirmed','Partially Paid','Fully Paid','In Progress','COMPLETED','Cancelled'];
-let page='dashboard', me=null, profile=null, organization=null;
+let page='dashboard', me=null, profile=null, organization=null, subscription=null;
 let cache={clients:[],quotations:[],quotation_items:[],bookings:[],suppliers:[],hotels:[],services:[],history:[],expenses:[],payments:[],supplierPayments:[],profiles:[]};
 
 const $=id=>document.getElementById(id);
@@ -70,7 +70,10 @@ function dashboardPage(){
  }
  const rows=cache.bookings.map(financeForBooking);const sales=rows.reduce((a,b)=>a+b.selling,0),paid=rows.reduce((a,b)=>a+b.clientPaid,0),cost=rows.reduce((a,b)=>a+b.cost,0),exp=rows.reduce((a,b)=>a+b.exp,0);
  const upcoming=cache.bookings.filter(b=>b.departure&&b.departure>=today()&&!['Cancelled','COMPLETED'].includes(b.status)).length;
- $('content').innerHTML=`<div class="welcome"><div><h1>Welcome, ${esc(String(profile?.full_name||'').trim()||'Kulu Team')}</h1><p>Live Kulu Travels business overview.</p></div><div class="date"><b>${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</b><br>Curated journeys. Seamless operations.</div></div>
+ const trialDays=subscription?.trial_ends_at?Math.max(0,Math.ceil((new Date(subscription.trial_ends_at).getTime()-Date.now())/86400000)):null;
+ const trialBanner=subscription?.status==='trial'?(`<div class="trial-status-banner"><div><b>${trialDays===0?'Your free trial has expired':'KTBS Free Trial'}</b><span>${trialDays===0?'Your workspace is read-only until you upgrade.':trialDays+' day'+(trialDays===1?'':'s')+' remaining'}</span></div><div class="trial-usage"><span>Staff <b>${cache.profiles.filter(p=>p.active).length}/2</b></span><span>Clients <b>${cache.clients.length}/100</b></span><span>Quotations <b>${cache.quotations.length}/25</b></span><span>Bookings <b>${cache.bookings.length}/10</b></span></div></div>`):'';
+ $('content').innerHTML=`<div class="welcome"><div><h1>Welcome, ${esc(String(profile?.full_name||'').trim()||'Kulu Team')}</h1><p>Live ${esc(organization?.name||'KTBS')} business overview.</p></div><div class="date"><b>${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</b><br>Curated journeys. Seamless operations.</div></div>
+ ${trialBanner}
  <div class="grid stats">
  ${stat('Total Clients',cache.clients.length,'Live client master')}${stat('Active Bookings',cache.bookings.filter(b=>!['Cancelled','COMPLETED'].includes(b.status)).length,'Current bookings')}${stat('Upcoming Travel',upcoming,'Future departures')}${stat('Client Payments Outstanding',money(sales-paid),'Selling less client payments')}${stat('Supplier Balances',money(cost-rows.reduce((a,b)=>a+b.supplierPaid,0)),'Supplier cost less paid')}${stat('Revenue (YTD)',money(sales),'From bookings')}${stat('Gross Profit (YTD)',money(sales-cost),'Selling less supplier cost')}${stat('Net Profit (YTD)',money(sales-cost-exp),'Gross profit less other expenses')}
  </div>
@@ -1537,6 +1540,20 @@ async function enterApp(user){
     return alert('Your organization workspace could not be loaded. Please contact your platform administrator.');
   }
   organization=orgRecord.data;
+  const subscriptionResult=await sb.from('organization_subscriptions').select('plan_code,status,trial_started_at,trial_ends_at,current_period_ends_at').eq('organization_id',organization.id).maybeSingle();
+  subscription=subscriptionResult.error?null:subscriptionResult.data;
+  const subscriptionBadge=$('subscriptionBadge');
+  if(subscriptionBadge){
+    subscriptionBadge.classList.remove('hidden');
+    if(subscription?.status==='trial'){
+      const remaining=subscription.trial_ends_at?Math.max(0,Math.ceil((new Date(subscription.trial_ends_at).getTime()-Date.now())/86400000)):14;
+      subscriptionBadge.textContent=remaining===0?'TRIAL EXPIRED':`TRIAL · ${remaining}D LEFT`;
+      subscriptionBadge.classList.toggle('expired',remaining===0);
+    }else{
+      subscriptionBadge.textContent=(subscription?.status||organization.status||'ACTIVE').replace('_',' ').toUpperCase();
+      subscriptionBadge.classList.remove('expired');
+    }
+  }
   const organizationLabel=$('organizationName');
   if(organizationLabel)organizationLabel.textContent=organization.name;
 
