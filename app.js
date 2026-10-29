@@ -6,7 +6,8 @@ let page='dashboard', me=null, profile=null, organization=null;
 let cache={clients:[],quotations:[],quotation_items:[],bookings:[],suppliers:[],hotels:[],services:[],history:[],expenses:[],payments:[],supplierPayments:[],profiles:[]};
 
 const $=id=>document.getElementById(id);
-const money=n=>'KES '+Number(n||0).toLocaleString('en-KE');
+const currencyLocale={KES:'en-KE',TZS:'en-TZ',UGX:'en-UG',USD:'en-US',EUR:'en-IE',GBP:'en-GB'};
+const money=n=>{const currency=organization?.currency||'KES';return currency+' '+Number(n||0).toLocaleString(currencyLocale[currency]||'en-KE');};
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const today=()=>new Date().toISOString().slice(0,10);
 const isAdmin=()=>String(profile?.role||'').toLowerCase()==='admin';
