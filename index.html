@@ -16,8 +16,28 @@
       <label>Email<input id="email" type="email" autocomplete="username" required></label>
       <label>Password<input id="password" type="password" autocomplete="current-password" required></label>
       <button class="primary full">Sign in</button>
-      <small id="loginMessage">Use your Supabase staff account.</small>
+      <small id="loginMessage">Sign in to your KTBS workspace.</small>
     </form>
+    <div class="trial-divider"><span>NEW TO KTBS?</span></div>
+    <button id="showSignup" type="button" class="secondary full">Start a Free Trial</button>
+    <form id="signupForm" class="hidden" style="margin-top:18px">
+      <h2 style="font-size:23px">Start your 14-day trial</h2>
+      <p class="trial-copy">Explore KTBS with limited trial access. No payment is taken during registration.</p>
+      <label>Your Full Name<input name="full_name" autocomplete="name" required minlength="2" maxlength="100"></label>
+      <label>Travel Business Name<input name="company_name" autocomplete="organization" required minlength="2" maxlength="120"></label>
+      <label>Business Email<input name="email" type="email" autocomplete="email" required></label>
+      <label>Country<select name="country" required><option value="Kenya" selected>Kenya</option><option value="Tanzania">Tanzania</option><option value="Uganda">Uganda</option><option value="Rwanda">Rwanda</option><option value="Other">Other</option></select></label>
+      <label>Default Currency<select name="currency" required><option value="KES" selected>KES — Kenyan Shilling</option><option value="TZS">TZS — Tanzanian Shilling</option><option value="UGX">UGX — Ugandan Shilling</option><option value="USD">USD — US Dollar</option><option value="EUR">EUR — Euro</option><option value="GBP">GBP — British Pound</option></select></label>
+      <button id="signupSubmit" class="primary full">Create Trial Workspace</button>
+      <small id="signupMessage">We'll email you a secure invitation link to set up your account.</small>
+    </form>
+    <div id="trialLimits" class="trial-limits hidden">
+      <b>What's included in the trial</b>
+      <span>14 days · 2 staff accounts · 100 clients</span>
+      <span>25 quotations · 10 bookings</span>
+      <span>Upgrade required after trial expiry to continue editing.</span>
+    </div>
+    <button id="showLogin" type="button" class="link-btn full hidden" style="margin-top:12px">Already have an account? Sign in</button>
   </div>
 </div>
 
@@ -55,6 +75,7 @@
 <div id="modal" class="modal hidden"><div class="modal-card"><div class="modal-head"><h3 id="modalTitle"></h3><button onclick="closeModal()">×</button></div><div id="modalBody"></div></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
-<script src="app.js?v=20261029-tenant-workspace"></script>
+<script src="app.js?v=20261029-saas-trial"></script>
+<script src="signup.js?v=20261029-saas-trial"></script>
 </body>
 </html>
