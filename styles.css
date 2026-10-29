@@ -641,3 +641,18 @@ table{
   background:#fff;
   box-shadow:6px 0 10px rgba(29,48,62,.06);
 }
+
+
+/* SaaS limited-trial registration */
+.secondary{background:#fff;color:#087e8a;border:1px solid #bfe5e9;border-radius:9px;padding:10px 14px;font-weight:800}
+.trial-divider{display:flex;align-items:center;gap:12px;margin:22px 0 12px;color:#9aa5ad;font-size:9px;font-weight:800;letter-spacing:.16em}
+.trial-divider:before,.trial-divider:after{content:"";height:1px;background:var(--line);flex:1}
+.trial-copy{font-size:12px!important;line-height:1.5;color:var(--muted);margin-bottom:12px!important}
+.trial-limits{margin-top:16px;padding:14px;text-align:left;border:1px solid #d8eef0;border-radius:12px;background:#f6fcfd;font-size:11px;color:#52636d}
+.trial-limits b,.trial-limits span{display:block;margin:0 0 7px}
+.trial-limits span:last-child{margin-bottom:0;color:#7a8790}
+.signup-message{line-height:1.5;overflow-wrap:anywhere}
+.signup-message.success{color:#168d4a;font-weight:700}
+.signup-message.error{color:#c94559;font-weight:700}
+#signupSubmit:disabled{opacity:.65;cursor:wait}
+.signup-muted{opacity:.65}
