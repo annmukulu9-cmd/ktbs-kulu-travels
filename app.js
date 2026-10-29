@@ -1534,7 +1534,7 @@ async function enterApp(user){
     await sb.auth.signOut();
     return alert('No active organization is linked to this account. Please contact your platform administrator.');
   }
-  const orgRecord=await sb.from('organizations').select('id,name,slug,status').eq('id',orgResult.data).single();
+  const orgRecord=await sb.from('organizations').select('id,name,slug,status,country,currency').eq('id',orgResult.data).single();
   if(orgRecord.error || !orgRecord.data){
     await sb.auth.signOut();
     return alert('Your organization workspace could not be loaded. Please contact your platform administrator.');
