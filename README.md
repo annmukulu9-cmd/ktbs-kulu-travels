@@ -106,11 +106,23 @@ KTBS is being evolved from a single-agency system into a subscription platform f
 - The signed-in workspace loads the current user's active organization and displays its name in the workspace header.
 - The existing Kulu Travels workspace remains the first tenant.
 
-### Next milestones
-1. Organization setup and profile settings (logo, brand colors, contact details, currency and timezone).
-2. Platform super-admin console and secure tenant onboarding.
-3. Subscription plans, trials, billing and plan limits.
-4. Public trip pages, itineraries, traveller forms and booking requests.
-5. Payment-provider integrations, reminders and advanced travel operations.
+### Phase 2 — limited trial onboarding (October 2026)
 
-**Important:** Public self-service registration, subscription billing and a platform super-admin console have not been implemented yet. Do not market the platform as open for external sign-ups until those phases and cross-tenant security checks are complete.
+- Added the subscription-plan catalogue and organization-subscription records.
+- Added a secure Supabase Edge Function, `ktbs-start-trial`, for business-owner invitation and workspace creation. The service-role key remains server-side.
+- Added a registration form for business name, owner name, email, country and default currency.
+- Trial length: **14 days** from workspace creation.
+- Trial caps: **2 staff accounts including the owner, 100 clients, 25 quotations and 10 bookings**.
+- Database triggers enforce trial limits and make expired, past-due, suspended or cancelled workspaces read-only for operational records.
+- Added basic signup abuse protection using a hidden honeypot and hashed-IP attempt limits.
+- Kulu Travels is marked active on the subscription layer and is not limited by the new trial caps.
+
+### Remaining before public launch
+1. Confirm Supabase Auth email invitation delivery and the allowed redirect URL.
+2. Confirm the Vercel production deployment is publicly reachable while previews remain protected.
+3. Test a complete external sign-up, email invite acceptance, login, workspace isolation and each trial cap.
+4. Add a protected platform super-admin console.
+5. Set commercial plan pricing and integrate payment collection (including a suitable Kenya payment method).
+6. Complete cross-tenant and subscription-expiry tests.
+
+**Important:** Trial infrastructure and the registration entry point have been added, but this is not yet a fully validated public launch. Paid subscription checkout, the platform super-admin console and end-to-end registration tests remain outstanding. Do not advertise paid subscriptions as available until these checks are complete.
