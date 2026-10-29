@@ -658,3 +658,14 @@ table{
 .signup-muted{opacity:.65}
 
 .signup-honeypot{position:absolute!important;left:-10000px!important;top:auto!important;width:1px!important;height:1px!important;overflow:hidden!important}
+
+.subscription-badge{display:inline-flex;align-items:center;padding:7px 10px;border-radius:20px;background:#eaf8ef;color:#168d4a;border:1px solid #ccebd8;font-size:9px;font-weight:800;letter-spacing:.05em;white-space:nowrap}
+.subscription-badge.expired{background:#fdebed;color:#c94559;border-color:#f4c9cf}
+.trial-status-banner{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 17px;padding:16px 18px;background:#f3fbfc;border:1px solid #cce9ec;border-radius:13px}
+.trial-status-banner>div:first-child b,.trial-status-banner>div:first-child span{display:block}
+.trial-status-banner>div:first-child b{font-size:13px;color:#087e8a;margin-bottom:4px}
+.trial-status-banner>div:first-child span{font-size:11px;color:#63727d}
+.trial-usage{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.trial-usage span{padding:7px 9px;background:#fff;border:1px solid #dcecef;border-radius:8px;color:#6c7883;font-size:10px;white-space:nowrap}
+.trial-usage b{color:#18202a}
+@media(max-width:900px){.subscription-badge{display:none}.trial-status-banner{align-items:flex-start;flex-direction:column}.trial-usage{justify-content:flex-start}}
