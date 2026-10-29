@@ -111,6 +111,8 @@ KTBS is being evolved from a single-agency system into a subscription platform f
 - Added the subscription-plan catalogue and organization-subscription records.
 - Added a secure Supabase Edge Function, `ktbs-start-trial`, for business-owner invitation and workspace creation. The service-role key remains server-side.
 - Added a registration form for business name, owner name, email, country and default currency.
+- Added invite acceptance with a password-setup screen, workspace trial-status badge and dashboard quota usage.
+- Workspace totals use the organization's selected currency.
 - Trial length: **14 days** from workspace creation.
 - Trial caps: **2 staff accounts including the owner, 100 clients, 25 quotations and 10 bookings**.
 - Database triggers enforce trial limits and make expired, past-due, suspended or cancelled workspaces read-only for operational records.
@@ -118,11 +120,13 @@ KTBS is being evolved from a single-agency system into a subscription platform f
 - Kulu Travels is marked active on the subscription layer and is not limited by the new trial caps.
 
 ### Remaining before public launch
-1. Confirm Supabase Auth email invitation delivery and the allowed redirect URL.
-2. Confirm the Vercel production deployment is publicly reachable while previews remain protected.
-3. Test a complete external sign-up, email invite acceptance, login, workspace isolation and each trial cap.
+1. Test Supabase Auth email invitation delivery and confirm the allowed redirect URL.
+2. Test a complete external sign-up, invitation acceptance, password setup and first login.
+3. Test workspace isolation and each trial cap with a separate test operator.
 4. Add a protected platform super-admin console.
 5. Set commercial plan pricing and integrate payment collection (including a suitable Kenya payment method).
 6. Complete cross-tenant and subscription-expiry tests.
+
+The Vercel production URL is now publicly reachable for the registration screen; preview deployments remain SSO-protected.
 
 **Important:** Trial infrastructure and the registration entry point have been added, but this is not yet a fully validated public launch. Paid subscription checkout, the platform super-admin console and end-to-end registration tests remain outstanding. Do not advertise paid subscriptions as available until these checks are complete.
