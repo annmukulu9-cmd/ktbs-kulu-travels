@@ -1039,7 +1039,7 @@ async function newBooking(){
 }
 
 function suppliersPage(){
-  const actions=isAdmin()?'<button class="primary" onclick="newSupplier()">+ New Supplier</button>':'<span class="muted">Shared supplier directory · View only</span>';
+  const actions='<button class="primary" onclick="newSupplier()">+ New Supplier</button><span class="muted">Shared supplier directory</span>';
   $('content').innerHTML=`<div class="toolbar"><input id="supplierFilter" placeholder="Search suppliers by name, contact, phone or type…" oninput="filterSupplierList()">${actions}</div>${tableWrap(`<div id="supplierTable">${supplierTable(cache.suppliers)}</div>`) }`;
 }
 function supplierTable(rows){
@@ -1047,7 +1047,7 @@ function supplierTable(rows){
 }
 function filterSupplierList(){const v=($('supplierFilter')?.value||'').toLowerCase();$('supplierTable').innerHTML=supplierTable(cache.suppliers.filter(s=>[s.name,s.contact_person,s.contact,s.phone,s.email,s.type].join(' ').toLowerCase().includes(v)))}
 async function hotelsPage(){
-  const actions=isAdmin()?'<button class="primary" onclick="newHotel()">+ New Hotel</button>':'<span class="muted">Shared hotel directory · View only</span>';
+  const actions='<button class="primary" onclick="newHotel()">+ New Hotel</button><span class="muted">Shared hotel directory</span>';
   $('content').innerHTML=`<div class="toolbar"><input id="hotelFilter" placeholder="Search hotels by name, destination or contact…" oninput="filterHotelList()">${actions}</div>${tableWrap('<div id="hotelTable" class="empty">Loading hotel records…</div>')}`;
   const target=$('hotelTable');
   const result=await sb.from('hotels').select('*').eq('organization_id',organization.id).order('name');
@@ -1085,9 +1085,9 @@ async function newSupplier(){
     <label>Legacy Contact / Other Details<input name="contact"></label>
     <label>Type<input name="type" placeholder="Safari, Flight, Transfer…"></label>
   </div><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Supplier</button></div></form>`);
-  $('sForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));f.created_by=me.id;const r=await sb.from('suppliers').insert(f);if(r.error)return alert(r.error.message);await refresh();closeModal();go('suppliers')}
+  $('sForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));f.created_by=me.id;f.organization_id=organization.id;const r=await sb.from('suppliers').insert(f);if(r.error)return alert(r.error.message);await refresh();closeModal();go('suppliers')}
 }
-async function newHotel(){openModal('Add Hotel',`<form id="hForm"><div class="form-grid"><label>Hotel Name<input name="name" required></label><label>Destination<input name="destination"></label><label>Contact Person<input name="contact_person"></label><label>Phone<input name="phone" placeholder="+254…"></label><label>Email<input type="email" name="email"></label><label>Legacy Contact / Other Details<input name="contact"></label></div><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Hotel</button></div></form>`);$('hForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));f.created_by=me.id;const r=await sb.from('hotels').insert(f);if(r.error)return alert(r.error.message);await refresh();closeModal();go('hotels')}}
+async function newHotel(){openModal('Add Hotel',`<form id="hForm"><div class="form-grid"><label>Hotel Name<input name="name" required></label><label>Destination<input name="destination"></label><label>Contact Person<input name="contact_person"></label><label>Phone<input name="phone" placeholder="+254…"></label><label>Email<input type="email" name="email"></label><label>Legacy Contact / Other Details<input name="contact"></label></div><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Hotel</button></div></form>`);$('hForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));f.created_by=me.id;f.organization_id=organization.id;const r=await sb.from('hotels').insert(f);if(r.error)return alert(r.error.message);await refresh();closeModal();go('hotels')}}
 function newService(){openModal('Add Service / Travel Item',`<form id="svForm"><label>Service Name<input name="name" required></label><label>Category<input name="category" placeholder="Flights, Safari, Accommodation…"></label><label>Destination<input name="destination"></label><label>Default Amount (KES)<input type="number" name="default_amount" value="0"></label><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Service</button></div></form>`);$('svForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));f.default_amount=+f.default_amount||0;f.created_by=me.id;const r=await sb.from('services').insert(f);if(r.error)return alert(r.error.message);await refresh();closeModal();go('services')}}
 async function deleteMaster(table,id){if(!isAdmin())return;if(!confirm('Delete this master item?'))return;const r=await sb.from(table).delete().eq('id',id);if(r.error)return alert(r.error.message);await refresh();render()}
 
