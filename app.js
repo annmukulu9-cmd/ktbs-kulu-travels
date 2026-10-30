@@ -1046,10 +1046,20 @@ function supplierTable(rows){
   return rows.length?`<table><thead><tr><th>Supplier</th><th>Contact Person</th><th>Phone</th><th>Email</th><th>Type</th><th></th></tr></thead><tbody>${rows.map(s=>`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.contact_person||s.contact||'')}</td><td>${esc(s.phone||'')}</td><td>${esc(s.email||'')}</td><td>${esc(s.type||'')}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('suppliers','${s.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No supplier records match your search.</div>';
 }
 function filterSupplierList(){const v=($('supplierFilter')?.value||'').toLowerCase();$('supplierTable').innerHTML=supplierTable(cache.suppliers.filter(s=>[s.name,s.contact_person,s.contact,s.phone,s.email,s.type].join(' ').toLowerCase().includes(v)))}
-function hotelsPage(){
+async function hotelsPage(){
   const actions=isAdmin()?'<button class="primary" onclick="newHotel()">+ New Hotel</button>':'<span class="muted">Shared hotel directory · View only</span>';
-  const issue=cache.hotelLoadError?`<div class="empty">Unable to load hotel records: ${esc(cache.hotelLoadError)}</div>`:'';
-  $('content').innerHTML=`<div class="toolbar"><input id="hotelFilter" placeholder="Search hotels by name, destination or contact…" oninput="filterHotelList()">${actions}</div>${tableWrap(issue||`<div id="hotelTable">${hotelTable(cache.hotels)}</div>`) }`;
+  $('content').innerHTML=`<div class="toolbar"><input id="hotelFilter" placeholder="Search hotels by name, destination or contact…" oninput="filterHotelList()">${actions}</div>${tableWrap('<div id="hotelTable" class="empty">Loading hotel records…</div>')}`;
+  const target=$('hotelTable');
+  const result=await sb.from('hotels').select('*').eq('organization_id',organization.id).order('name');
+  if(!target)return;
+  if(result.error){
+    target.innerHTML='Unable to load hotel records: '+esc(result.error.message);
+    return;
+  }
+  cache.hotels=result.data||[];
+  target.innerHTML=hotelTable(cache.hotels);
+  const count=cache.hotels.length;
+  if(!count)target.innerHTML='No hotel records were returned for this workspace.';
 }
 function hotelTable(rows){
   return rows.length?`<table><thead><tr><th>Hotel</th><th>Destination</th><th>Contact Person</th><th>Phone</th><th>Email</th><th></th></tr></thead><tbody>${rows.map(h=>`<tr><td><b>${esc(h.name)}</b></td><td>${esc(h.destination||'')}</td><td>${esc(h.contact_person||h.contact||'')}</td><td>${esc(h.phone||'')}</td><td>${esc(h.email||'')}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('hotels','${h.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No hotel records match your search.</div>';
