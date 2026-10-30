@@ -1029,12 +1029,21 @@ async function newBooking(){
 }
 
 function suppliersPage(){
-  $('content').innerHTML=`<div class="toolbar"><button class="primary" onclick="newSupplier()">+ New Supplier</button></div>${tableWrap(cache.suppliers.length?`<table><thead><tr><th>Supplier</th><th>Contact Person</th><th>Phone</th><th>Email</th><th>Type</th><th></th></tr></thead><tbody>${cache.suppliers.map(s=>`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.contact_person||s.contact||'')}</td><td>${esc(s.phone||'')}</td><td>${esc(s.email||'')}</td><td>${esc(s.type||'')}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('suppliers','${s.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No supplier records yet.</div>')}`;
+  const actions=isAdmin()?'<button class="primary" onclick="newSupplier()">+ New Supplier</button>':'<span class="muted">Shared supplier directory · View only</span>';
+  $('content').innerHTML=`<div class="toolbar"><input id="supplierFilter" placeholder="Search suppliers by name, contact, phone or type…" oninput="filterSupplierList()">${actions}</div>${tableWrap(`<div id="supplierTable">${supplierTable(cache.suppliers)}</div>`) }`;
 }
-
+function supplierTable(rows){
+  return rows.length?`<table><thead><tr><th>Supplier</th><th>Contact Person</th><th>Phone</th><th>Email</th><th>Type</th><th></th></tr></thead><tbody>${rows.map(s=>`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.contact_person||s.contact||'')}</td><td>${esc(s.phone||'')}</td><td>${esc(s.email||'')}</td><td>${esc(s.type||'')}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('suppliers','${s.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No supplier records match your search.</div>';
+}
+function filterSupplierList(){const v=($('supplierFilter')?.value||'').toLowerCase();$('supplierTable').innerHTML=supplierTable(cache.suppliers.filter(s=>[s.name,s.contact_person,s.contact,s.phone,s.email,s.type].join(' ').toLowerCase().includes(v)))}
 function hotelsPage(){
-  $('content').innerHTML=`<div class="toolbar"><button class="primary" onclick="newHotel()">+ New Hotel</button></div>${tableWrap(cache.hotels.length?`<table><thead><tr><th>Hotel</th><th>Destination</th><th>Contact Person</th><th>Phone</th><th>Email</th><th></th></tr></thead><tbody>${cache.hotels.map(h=>`<tr><td><b>${esc(h.name)}</b></td><td>${esc(h.destination||'')}</td><td>${esc(h.contact_person||h.contact||'')}</td><td>${esc(h.phone||'')}</td><td>${esc(h.email||'')}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('hotels','${h.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No hotel records yet.</div>')}`;
+  const actions=isAdmin()?'<button class="primary" onclick="newHotel()">+ New Hotel</button>':'<span class="muted">Shared hotel directory · View only</span>';
+  $('content').innerHTML=`<div class="toolbar"><input id="hotelFilter" placeholder="Search hotels by name, destination or contact…" oninput="filterHotelList()">${actions}</div>${tableWrap(`<div id="hotelTable">${hotelTable(cache.hotels)}</div>`) }`;
 }
+function hotelTable(rows){
+  return rows.length?`<table><thead><tr><th>Hotel</th><th>Destination</th><th>Contact Person</th><th>Phone</th><th>Email</th><th></th></tr></thead><tbody>${rows.map(h=>`<tr><td><b>${esc(h.name)}</b></td><td>${esc(h.destination||'')}</td><td>${esc(h.contact_person||h.contact||'')}</td><td>${esc(h.phone||'')}</td><td>${esc(h.email||'')}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('hotels','${h.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No hotel records match your search.</div>';
+}
+function filterHotelList(){const v=($('hotelFilter')?.value||'').toLowerCase();$('hotelTable').innerHTML=hotelTable(cache.hotels.filter(h=>[h.name,h.destination,h.contact_person,h.contact,h.phone,h.email].join(' ').toLowerCase().includes(v)))}
 
 function servicesPage(){$('content').innerHTML=`<div class="toolbar"><button class="primary" onclick="newService()">+ New Service / Travel Item</button></div>${tableWrap(cache.services.length?`<table><thead><tr><th>Service / Item</th><th>Category</th><th>Destination</th><th>Active</th><th></th></tr></thead><tbody>${cache.services.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.category||'')}</td><td>${esc(s.destination||'')}</td><td>${s.active?'Yes':'No'}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('services','${s.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No services yet.</div>')}`}
 async function newSupplier(){
