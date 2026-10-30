@@ -28,26 +28,21 @@ async function loadBookings(){
  const {data,error}=await sb.from('bookings').select('id,booking_no,quotation_id,client_id,consultant_id,destination,departure,return_date,supplier_id,supplier_name,hotel_id,hotel_name,status,selling_amount,reference,notes,booking_date,created_at,created_by,updated_at,updated_by');if(error)throw error;return data||[];
 }
 async function loadData(){
- const [clients,quotations,quotation_items,bookings,supplierResult,hotelResult,services,history,expenses,payments,supplierPayments]=await Promise.all([
+ const [clients,quotations,quotation_items,bookings,supplierResult,hotelResult,services,history,expenses,payments,supplierPayments,profilesResult]=await Promise.all([
   q('clients'),q('quotations'),q('quotation_items'),loadBookings(),
   sb.from('suppliers').select('*').eq('organization_id',organization.id),
   sb.from('hotels').select('*').eq('organization_id',organization.id),
   q('services'),q('travel_history'),
-  isAdmin()?q('expenses'):Promise.resolve([]),q('client_payments'),isAdmin()?q('supplier_payments'):Promise.resolve([])
+  isAdmin()?q('expenses'):Promise.resolve([]),q('client_payments'),isAdmin()?q('supplier_payments'):Promise.resolve([]),
+  q('profiles').catch(()=>[])
  ]);
- let profiles=[];
-try{
-  profiles=await q('profiles');
-}catch(e){
-  profiles=[];
-}
  cache={
   clients,quotations,quotation_items,bookings,
   suppliers:supplierResult.error?[]:(supplierResult.data||[]),
   hotels:hotelResult.error?[]:(hotelResult.data||[]),
   hotelLoadError:hotelResult.error?.message||null,
   supplierLoadError:supplierResult.error?.message||null,
-  services,history,expenses,payments,supplierPayments,profiles
+  services,history,expenses,payments,supplierPayments,profiles:profilesResult
  };
 }
 async function refresh(){await loadData();render()}
@@ -1651,6 +1646,7 @@ async function enterApp(user){
   $('avatar').textContent=(String(profile.full_name||'').trim()||'S').charAt(0).toUpperCase();
   $('roleBadge').textContent=(profile.role||'consultant').toUpperCase();
 
+  $('content').innerHTML='<div class="page-card"><p>Loading your dashboard…</p></div>';
   await loadData();
   render();
 }
