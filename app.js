@@ -28,8 +28,11 @@ async function loadBookings(){
  const {data,error}=await sb.from('bookings').select('id,booking_no,quotation_id,client_id,consultant_id,destination,departure,return_date,supplier_id,supplier_name,hotel_id,hotel_name,status,selling_amount,reference,notes,booking_date,created_at,created_by,updated_at,updated_by');if(error)throw error;return data||[];
 }
 async function loadData(){
- const [clients,quotations,quotation_items,bookings,suppliers,hotels,services,history,expenses,payments,supplierPayments]=await Promise.all([
-  q('clients'),q('quotations'),q('quotation_items'),loadBookings(),q('suppliers'),q('hotels'),q('services'),q('travel_history'),
+ const [clients,quotations,quotation_items,bookings,supplierResult,hotelResult,services,history,expenses,payments,supplierPayments]=await Promise.all([
+  q('clients'),q('quotations'),q('quotation_items'),loadBookings(),
+  sb.from('suppliers').select('*').eq('organization_id',organization.id),
+  sb.from('hotels').select('*').eq('organization_id',organization.id),
+  q('services'),q('travel_history'),
   isAdmin()?q('expenses'):Promise.resolve([]),q('client_payments'),isAdmin()?q('supplier_payments'):Promise.resolve([])
  ]);
  let profiles=[];
@@ -38,7 +41,14 @@ try{
 }catch(e){
   profiles=[];
 }
- cache={clients,quotations,quotation_items,bookings,suppliers,hotels,services,history,expenses,payments,supplierPayments,profiles};
+ cache={
+  clients,quotations,quotation_items,bookings,
+  suppliers:supplierResult.error?[]:(supplierResult.data||[]),
+  hotels:hotelResult.error?[]:(hotelResult.data||[]),
+  hotelLoadError:hotelResult.error?.message||null,
+  supplierLoadError:supplierResult.error?.message||null,
+  services,history,expenses,payments,supplierPayments,profiles
+ };
 }
 async function refresh(){await loadData();render()}
 
@@ -1038,7 +1048,8 @@ function supplierTable(rows){
 function filterSupplierList(){const v=($('supplierFilter')?.value||'').toLowerCase();$('supplierTable').innerHTML=supplierTable(cache.suppliers.filter(s=>[s.name,s.contact_person,s.contact,s.phone,s.email,s.type].join(' ').toLowerCase().includes(v)))}
 function hotelsPage(){
   const actions=isAdmin()?'<button class="primary" onclick="newHotel()">+ New Hotel</button>':'<span class="muted">Shared hotel directory · View only</span>';
-  $('content').innerHTML=`<div class="toolbar"><input id="hotelFilter" placeholder="Search hotels by name, destination or contact…" oninput="filterHotelList()">${actions}</div>${tableWrap(`<div id="hotelTable">${hotelTable(cache.hotels)}</div>`) }`;
+  const issue=cache.hotelLoadError?`<div class="empty">Unable to load hotel records: ${esc(cache.hotelLoadError)}</div>`:'';
+  $('content').innerHTML=`<div class="toolbar"><input id="hotelFilter" placeholder="Search hotels by name, destination or contact…" oninput="filterHotelList()">${actions}</div>${tableWrap(issue||`<div id="hotelTable">${hotelTable(cache.hotels)}</div>`) }`;
 }
 function hotelTable(rows){
   return rows.length?`<table><thead><tr><th>Hotel</th><th>Destination</th><th>Contact Person</th><th>Phone</th><th>Email</th><th></th></tr></thead><tbody>${rows.map(h=>`<tr><td><b>${esc(h.name)}</b></td><td>${esc(h.destination||'')}</td><td>${esc(h.contact_person||h.contact||'')}</td><td>${esc(h.phone||'')}</td><td>${esc(h.email||'')}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('hotels','${h.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No hotel records match your search.</div>';
