@@ -1066,7 +1066,16 @@ function hotelTable(rows){
 }
 function filterHotelList(){const v=($('hotelFilter')?.value||'').toLowerCase();$('hotelTable').innerHTML=hotelTable(cache.hotels.filter(h=>[h.name,h.destination,h.contact_person,h.contact,h.phone,h.email].join(' ').toLowerCase().includes(v)))}
 
-function servicesPage(){$('content').innerHTML=`<div class="toolbar"><button class="primary" onclick="newService()">+ New Service / Travel Item</button></div>${tableWrap(cache.services.length?`<table><thead><tr><th>Service / Item</th><th>Category</th><th>Destination</th><th>Active</th><th></th></tr></thead><tbody>${cache.services.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.category||'')}</td><td>${esc(s.destination||'')}</td><td>${s.active?'Yes':'No'}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('services','${s.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No services yet.</div>')}`}
+async function servicesPage(){
+ const actions=isAdmin()?'<button class="primary" onclick="newService()">+ New Service / Travel Item</button>':'<span class="muted">Shared service directory · View only</span>';
+ $('content').innerHTML=`<div class="toolbar">${actions}</div>${tableWrap('<div id="serviceTable" class="empty">Loading services…</div>')}`;
+ const target=$('serviceTable');
+ const result=await sb.from('services').select('*').eq('organization_id',organization.id).order('name');
+ if(!target)return;
+ if(result.error){target.innerHTML='Unable to load services: '+esc(result.error.message);return;}
+ cache.services=result.data||[];
+ target.innerHTML=cache.services.length?`<table><thead><tr><th>Service / Item</th><th>Category</th><th>Destination</th><th>Active</th><th></th></tr></thead><tbody>${cache.services.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.category||'')}</td><td>${esc(s.destination||'')}</td><td>${s.active?'Yes':'No'}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('services','${s.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'No service records were returned for this workspace.';
+}
 async function newSupplier(){
   openModal('Add Supplier',`<form id="sForm"><div class="form-grid">
     <label>Supplier Name<input name="name" required></label>
