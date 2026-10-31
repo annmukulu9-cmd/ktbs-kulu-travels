@@ -65,6 +65,7 @@
         const themeMeta = document.querySelector('meta[name="theme-color"]');
         if(themeMeta) themeMeta.content = brand.primary_color;
         document.title = company.name + " | KTBS";
+        document.querySelectorAll("#login [data-install-app]").forEach(button=>button.classList.remove("hidden"));
       } catch(error) {
         $("loginMessage").textContent = error.message || "Could not load this company login page.";
       }
@@ -79,7 +80,7 @@
       ? "To install KTBS on your iPhone or iPad: open this page in Safari, tap Share, then choose Add to Home Screen."
       : "To install KTBS, open your browser menu and choose Install app or Add to Home Screen. On some browsers this option appears in the address bar.");
   };
-  window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();installPrompt=event;document.querySelectorAll("[data-install-app]").forEach(b=>b.classList.remove("hidden"));});
-  document.querySelectorAll("[data-install-app]").forEach(b=>b.addEventListener("click",install));
+  window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();installPrompt=event;document.querySelectorAll("#login [data-install-app]").forEach(b=>b.classList.remove("hidden"));});
+  document.querySelectorAll("#login [data-install-app]").forEach(b=>b.addEventListener("click",install));
   if("serviceWorker" in navigator && location.protocol==="https:"){window.addEventListener("load",()=>navigator.serviceWorker.register("/service-worker.js").catch(()=>{}));}
 })();
