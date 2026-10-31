@@ -56,6 +56,10 @@
         }else{
           logo.classList.add("hidden");mark.textContent=(company.name.trim()[0]||"T").toUpperCase();mark.classList.remove("hidden");
         }
+        const manifestLink = document.querySelector('link[rel="manifest"]');
+        if(manifestLink) manifestLink.href = "/api/manifest?company=" + encodeURIComponent(company.slug);
+        const themeMeta = document.querySelector('meta[name="theme-color"]');
+        if(themeMeta) themeMeta.content = brand.primary_color;
         document.title = company.name + " | KTBS";
       } catch(error) {
         $("loginMessage").textContent = error.message || "Could not load this company login page.";
