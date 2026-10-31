@@ -1,5 +1,5 @@
 const CACHE="ktbs-static-v2";
-const STATIC=["/styles.css","/ktbs-icon.svg","/manifest.webmanifest"];
+const STATIC=["/styles.css","/ktbs-icon.svg"];
 self.addEventListener("install",event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(STATIC)));
  self.skipWaiting();
