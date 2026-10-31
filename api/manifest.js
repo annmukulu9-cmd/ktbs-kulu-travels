@@ -20,9 +20,17 @@ module.exports = async function handler(req, res) {
     }
     const company = result.company;
     const brand = result.branding;
-    const icon = "/ktbs-icon.svg";
+    const companyLogo = typeof brand.logo_url === "string" && brand.logo_url.trim()
+      ? brand.logo_url.trim()
+      : null;
+    const icon = companyLogo || "/ktbs-icon.svg";
+    const iconType = companyLogo
+      ? (/\\.jpe?g(?:[?#]|$)/i.test(companyLogo) ? "image/jpeg"
+        : /\\.webp(?:[?#]|$)/i.test(companyLogo) ? "image/webp"
+        : "image/png")
+      : "image/svg+xml";
     res.setHeader("Content-Type", "application/manifest+json; charset=utf-8");
-    res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300");
+    res.setHeader("Cache-Control", "public, max-age=60, s-maxage=60");
     res.status(200).json({
       id: "/login/" + slug,
       name: company.name + " · KTBS",
@@ -34,8 +42,7 @@ module.exports = async function handler(req, res) {
       background_color: brand.background_color,
       theme_color: brand.primary_color,
       icons: [
-        { src: icon, sizes: "192x192", type: "image/svg+xml", purpose: "any" },
-        { src: icon, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
+        { src: icon, type: iconType, purpose: "any" }
       ]
     });
   } catch {
