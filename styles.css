@@ -1172,3 +1172,11 @@ body{background:#fbfcfa;color:#202321}
 .registration-login{text-align:center;border-top:1px solid #edf0ec;margin-top:21px;padding-top:17px;font-size:11px;color:#69766f}
 .registration-login button{border:0;background:none;color:#087e80;font-size:11px;font-weight:900;cursor:pointer}
 @media(max-width:620px){.registration-shell{padding:15px 12px 35px}.registration-card{padding:25px 19px 23px;border-radius:9px}.registration-kicker{margin-top:25px}.registration-grid{grid-template-columns:1fr;gap:13px}.registration-branding{grid-template-columns:1fr;gap:13px;padding:15px}.logo-upload{min-height:95px}.registration-card h1{font-size:32px}.registration-intro{font-size:12px}}
+
+/* Per-company branded login variables */
+#login.login-shell{background:linear-gradient(135deg,var(--company-background,#f5f7f3),#eef6f2)}
+#login .login-card{border-top:4px solid var(--company-accent,#45ffef)}
+#login .eyebrow{color:var(--company-primary,#087e80)}
+#login .primary{background:var(--company-primary,#087e80);border-color:var(--company-primary,#087e80)}
+#login .primary:hover{filter:brightness(.92)}
+.login-brand-mark{width:104px;height:104px;margin:0 auto 18px;border-radius:50%;display:grid;place-items:center;background:var(--company-primary,#202725);color:var(--company-accent,#45ffef);font:800 48px "Manrope",sans-serif;box-shadow:0 0 0 8px var(--company-background,#f5f7f3),0 0 0 9px var(--company-accent,#45ffef)}
