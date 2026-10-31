@@ -1673,6 +1673,7 @@ async function enterApp(user){
     return alert('This staff account is inactive.');
   }
 
+  $('publicSite')?.classList.add('hidden');
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
 
