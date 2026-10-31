@@ -28,6 +28,41 @@
   if(invite){landing?.classList.add("hidden");registration?.classList.add("hidden");login?.classList.remove("hidden");}
   else if(signupRoute) showSignup();
   else if(loginRoute) showLogin();
+  const companyFromPath = location.pathname.match(/^\\/login\\/([a-z0-9-]+)\\/?$/i)?.[1];
+  const companySlug = companyFromPath || new URLSearchParams(location.search).get("company");
+  if(companySlug && login){
+    const loadCompanyBranding = async () => {
+      try {
+        const response = await fetch(window.KTBS_SUPABASE_URL + "/functions/v1/ktbs-get-branding", {
+          method:"POST",
+          headers:{"Content-Type":"application/json","apikey":window.KTBS_SUPABASE_ANON_KEY},
+          body:JSON.stringify({slug:companySlug})
+        });
+        const result = await response.json();
+        if(!response.ok || !result.success) throw new Error(result.error || "This company login page is unavailable.");
+        const company = result.company, brand = result.branding;
+        const shell = $("login");
+        shell.style.setProperty("--company-primary",brand.primary_color);
+        shell.style.setProperty("--company-accent",brand.accent_color);
+        shell.style.setProperty("--company-background",brand.background_color);
+        $("loginCompanyName").textContent = company.name.toUpperCase();
+        $("loginWelcomeTitle").textContent = brand.welcome_message || "Welcome back";
+        $("loginWelcomeSubtitle").textContent = company.name + " · Business Management System";
+        const logo = $("loginCompanyLogo"), mark = $("loginBrandMark");
+        if(brand.logo_url){
+          logo.src = brand.logo_url.startsWith("/") ? location.origin + brand.logo_url : brand.logo_url;
+          logo.alt = company.name;
+          logo.classList.remove("hidden");mark.classList.add("hidden");
+        }else{
+          logo.classList.add("hidden");mark.textContent=(company.name.trim()[0]||"T").toUpperCase();mark.classList.remove("hidden");
+        }
+        document.title = company.name + " | KTBS";
+      } catch(error) {
+        $("loginMessage").textContent = error.message || "Could not load this company login page.";
+      }
+    };
+    loadCompanyBranding();
+  }
   $("siteYear") && ($("siteYear").textContent=new Date().getFullYear());
   let installPrompt = null;
   const install = async () => {
