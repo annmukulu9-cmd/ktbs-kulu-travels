@@ -1,7 +1,7 @@
 {
   "id": "/login/kulu-travels",
   "name": "Kulu Travels · KTBS",
-  "short_name": "Kulu Travels",
+  "short_name": "KTBS",
   "description": "Your Kulu Travels business workspace, powered by KTBS.",
   "start_url": "/login/kulu-travels",
   "scope": "/",
@@ -12,15 +12,15 @@
   "icons": [
     {
       "src": "/ktbs-icon.svg",
-      "sizes": "192x192",
+      "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
       "src": "/ktbs-icon.svg",
-      "sizes": "512x512",
+      "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
