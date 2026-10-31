@@ -65,7 +65,7 @@
         const themeMeta = document.querySelector('meta[name="theme-color"]');
         if(themeMeta) themeMeta.content = brand.primary_color;
         document.title = company.name + " | KTBS";
-        document.querySelectorAll("#login [data-install-app]").forEach(button=>button.classList.remove("hidden"));
+        document.querySelectorAll("[data-install-app]").forEach(button=>button.classList.remove("hidden"));
       } catch(error) {
         $("loginMessage").textContent = error.message || "Could not load this company login page.";
       }
