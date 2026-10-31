@@ -74,6 +74,71 @@
     window.location.reload();
   });
 
+  const logoInput = $("companyLogo");
+  const logoPreviewWrap = $("logoPreviewWrap");
+  const logoPreview = $("companyLogoPreview");
+  const logoFileName = $("logoFileName");
+  const colorPanel = $("suggestedBrandColors");
+  let selectedLogo = null;
+  let logoData = "";
+  let logoMime = "";
+  const hex = n => "#" + n.toString(16).padStart(2, "0");
+  function readableBrandColors(file) {
+    return new Promise(resolve => {
+      const image = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      image.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = 48; canvas.height = 48;
+          const ctx = canvas.getContext("2d", {willReadFrequently:true});
+          ctx.drawImage(image, 0, 0, 48, 48);
+          const pixels = ctx.getImageData(0, 0, 48, 48).data;
+          const buckets = new Map();
+          for(let i=0;i<pixels.length;i+=16){
+            const a=pixels[i+3]; if(a<150) continue;
+            const r=Math.round(pixels[i]/32)*32,g=Math.round(pixels[i+1]/32)*32,b=Math.round(pixels[i+2]/32)*32;
+            const key=[r,g,b].join(",");
+            buckets.set(key,(buckets.get(key)||0)+1);
+          }
+          const candidates=[...buckets.entries()].sort((a,b)=>b[1]-a[1]).map(([key])=>key.split(",").map(Number))
+            .filter(([r,g,b])=>Math.max(r,g,b)-Math.min(r,g,b)>28 && (r+g+b)>100 && (r+g+b)<690);
+          const chosen=candidates[0]||[8,126,128];
+          const primary=hex(chosen[0])+hex(chosen[1])+hex(chosen[2]);
+          const accent=hex(Math.min(255,Math.round(chosen[0]*.35+166)))+hex(Math.min(255,Math.round(chosen[1]*.35+210)))+hex(Math.min(255,Math.round(chosen[2]*.35+205)));
+          resolve({primary,accent});
+        } catch { resolve({primary:"#202725",accent:"#45ffef"}); }
+        URL.revokeObjectURL(objectUrl);
+      };
+      image.onerror=()=>{URL.revokeObjectURL(objectUrl);resolve({primary:"#202725",accent:"#45ffef"});};
+      image.src=objectUrl;
+    });
+  }
+  logoInput?.addEventListener("change",async()=>{
+    const file=logoInput.files?.[0];
+    if(!file)return;
+    if(!["image/png","image/jpeg","image/webp","image/svg+xml"].includes(file.type)||file.size>2*1024*1024){
+      logoInput.value=""; alert("Choose a PNG, JPG, WEBP or SVG logo up to 2 MB."); return;
+    }
+    selectedLogo=file;
+    logoMime=file.type;
+    logoData=await new Promise((resolve,reject)=>{
+      const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(",")[1]||"");reader.onerror=reject;reader.readAsDataURL(file);
+    });
+    logoPreview.src=URL.createObjectURL(file);
+    logoFileName.textContent=file.name;
+    logoPreviewWrap.classList.remove("hidden");
+    colorPanel.classList.remove("hidden");
+    const suggested=await readableBrandColors(file);
+    $("brandPrimary").value=suggested.primary;
+    $("brandAccent").value=suggested.accent;
+    $("brandBackground").value="#f8f8f4";
+  });
+  $("removeCompanyLogo")?.addEventListener("click",()=>{
+    selectedLogo=null;logoData="";logoMime="";logoInput.value="";
+    logoPreviewWrap.classList.add("hidden");colorPanel.classList.add("hidden");
+  });
+
   signup?.addEventListener("submit", async event => {
     event.preventDefault();
     const form = Object.fromEntries(new FormData(signup).entries());
@@ -89,7 +154,12 @@
           email: String(form.email || "").trim(),
           country: form.country || "Kenya",
           currency: form.currency || "KES",
-          website: form.website || ""
+          website: form.website || "",
+          logo_data: logoData,
+          logo_mime: logoMime,
+          brand_primary: $("brandPrimary")?.value || "#202725",
+          brand_accent: $("brandAccent")?.value || "#45ffef",
+          brand_background: $("brandBackground")?.value || "#f8f8f4"
         }
       });
       if (error) {
@@ -107,7 +177,7 @@
       message.classList.add("success");
       message.textContent = data.message || "Trial workspace created. Check your email for the secure invitation link.";
       submit.textContent = "Invitation Requested";
-      signup.querySelectorAll("input,select,button").forEach(el => { if (el.id !== "showLogin") el.disabled = true; });
+      signup.querySelectorAll("input,select,button").forEach(el => { el.disabled = true; });
     } catch (err) {
       message.classList.add("error");
       message.textContent = err.message || "Something went wrong. Please try again later.";
