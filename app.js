@@ -55,7 +55,7 @@ function sumsForBooking(id){
 function financeForBooking(b){const s=sumsForBooking(b.id),selling=Number(b.selling_amount||0),cost=Number(b.supplier_cost||0),exp=Number(b.other_expenses||0);return {...s,selling,cost,exp,balance:selling-s.clientPaid,supplierPending:cost-s.supplierPaid,gross:selling-cost,net:selling-cost-exp}}
 function render(){
  document.querySelectorAll('#nav button').forEach(b=>{
-   const restricted=['finance','reports'].includes(b.dataset.page);
+   const restricted=['finance','reports','subscription'].includes(b.dataset.page);
    if(b.dataset.page==='platform-admin')b.classList.toggle('hidden',!platformAdmin);
    else b.classList.toggle('hidden',restricted&&!isAdmin());
    b.classList.toggle('active',b.dataset.page===page);
@@ -1411,6 +1411,45 @@ function reportsPage(){
     `)}
   `;
 }
+
+async function subscriptionPage(){
+ if(!isAdmin()){page='dashboard';return render();}
+ $('content').innerHTML='<div class="page-card"><p>Loading subscription plans…</p></div>';
+ const {data:plans,error}=await sb.from('subscription_plans').select('code,price_monthly,currency,active').in('code',['starter','growth']).order('price_monthly');
+ if(error){$('content').innerHTML='<div class="page-card"><h3>Plans are temporarily unavailable</h3><p>'+esc(error.message)+'</p></div>';return;}
+ const current=subscription||{};
+ const rows=(plans||[]).filter(p=>['starter','growth'].includes(p.code));
+ $('content').innerHTML=`
+ <div class="welcome"><div><h1>Subscription & Billing</h1><p>Choose a KTBS plan for ${esc(organization?.name||'this workspace')}.</p></div><span class="badge info">${esc(String(current.status||'trial').replace('_',' ').toUpperCase())}</span></div>
+ <div class="page-card" style="margin-bottom:18px"><h3>Your current access</h3><p>${current.status==='trial'?'Your 14-day free trial is still active. You can continue using it; viewing plans does not end or change your trial.':'Your current subscription status is '+esc(current.status||'not available')+'.'}</p>${current.trial_ends_at?'<p><b>Trial ends:</b> '+new Date(current.trial_ends_at).toLocaleDateString('en-GB')+'</p>':''}</div>
+ <div class="grid stats">${rows.map(p=>'<div class="page-card"><div class="eyebrow">'+(p.code==='starter'?'KTBS STARTER':'KTBS GROWTH')+'</div><h2 style="font-size:30px;margin:12px 0">'+esc(p.currency||'KES')+' '+Number(p.price_monthly||0).toLocaleString('en-KE')+' <small style="font-size:13px;color:#6c7883">/ month</small></h2><p>'+(p.active?'Available plan':'Sandbox test only · not enabled for live subscriptions')+'</p><span class="badge '+(p.active?'info':'warn')+'">'+(p.active?'Available':'Not active')+'</span></div>').join('')}</div>
+ <div class="page-card" style="margin-top:18px"><h3>Test M-Pesa payment</h3><p>Payments are currently restricted to the Safaricom sandbox. This will not activate a subscription or change your free-trial status.</p>
+ <form id="ktbsStkForm"><label>Choose a plan<select id="ktbsPlan" required>${rows.map(p=>'<option value="'+esc(p.code)+'">'+(p.code==='starter'?'Starter':'Growth')+' — '+esc(p.currency||'KES')+' '+Number(p.price_monthly||0).toLocaleString('en-KE')+'</option>').join('')}</select></label>
+ <label>M-Pesa sandbox phone number<input id="ktbsPhone" type="tel" inputmode="numeric" placeholder="07XXXXXXXX or 2547XXXXXXXX" required></label>
+ <label style="display:flex;gap:9px;align-items:flex-start"><input id="ktbsSandboxConsent" type="checkbox" required style="width:auto;margin-top:3px">I understand this is a sandbox test, not a real subscription payment.</label>
+ <button class="primary" type="submit" ${rows.length?'':'disabled'}>Send sandbox STK prompt</button><p id="ktbsStkMessage" role="status" aria-live="polite"></p></form></div>`;
+ $('ktbsStkForm')?.addEventListener('submit',sendKtbsSandboxStk);
+}
+async function sendKtbsSandboxStk(event){
+ event.preventDefault();
+ if(!isAdmin())return alert('Only a workspace administrator can start a subscription payment.');
+ if(!organization?.id)return alert('Workspace not loaded. Please refresh and try again.');
+ const planCode=$('ktbsPlan')?.value, phone=$('ktbsPhone')?.value.trim();
+ if(!$('ktbsSandboxConsent')?.checked)return;
+ if(!confirm('Send a Safaricom SANDBOX STK prompt for '+planCode.toUpperCase()+'? This does not activate the subscription.'))return;
+ const button=$('ktbsStkForm')?.querySelector('button[type="submit"]'), message=$('ktbsStkMessage');
+ if(button)button.disabled=true;
+ if(message)message.textContent='Connecting to M-Pesa sandbox…';
+ const {data,error}=await sb.functions.invoke('mpesa-stk-push',{body:{plan_code:planCode,phone}});
+ if(error||!data?.ok){
+  if(message)message.textContent=data?.error||error?.message||'Could not start the sandbox payment. Please try again.';
+  if(button)button.disabled=false;
+  return;
+ }
+ if(message)message.textContent=(data.message||'STK prompt sent. Check the test phone.')+' Payment reference: '+data.payment_id+'. Status: pending. No subscription has been activated.';
+ if(button)button.disabled=false;
+}
+
 function settingsPage(){$('content').innerHTML=`<div class="page-grid"><div class="page-card"><h3>Current User</h3><p><b>${esc(profile?.full_name||'')}</b><br>${esc(me?.email||'')}<br>${badge(profile?.role?.toUpperCase())}</p></div><div class="page-card"><h3>Permissions</h3><p>
   Consultants can create clients, quotations and operational records.
   Saved client and quotation records are protected from consultant
