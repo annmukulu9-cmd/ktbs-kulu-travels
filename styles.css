@@ -1102,3 +1102,35 @@ body{background:#fbfcfa;color:#202321}
  .site-footer .site-brand{width:100%;justify-content:center}
 }
 @media(prefers-reduced-motion:reduce){.site-cta{transition:none}}
+
+/* Readability refinement: brighten and slightly enlarge supporting copy */
+.public-site .hero-lede{font-size:16px;line-height:1.9;color:#d0dad5}
+.public-site .hero-proof{font-size:11px;color:#d0dcd6}
+.public-site .hero-bottomline{font-size:9px;color:#c0ccc5}
+.public-site .hero-bottomline>span:last-child{color:#edf5f1}
+.public-site .stage-greeting p{font-size:10px;color:#68766f}
+.public-site .stage-metrics small{font-size:9px;color:#69776f}
+.public-site .activity-row small{font-size:8px;color:#69776f}
+.public-site .stage-note small{font-size:8px;color:#65736c}
+.public-site .platform-heading>p{font-size:15px;line-height:1.9;color:#58655e}
+.public-site .platform-card p{font-size:12px;line-height:1.85;color:#5e6b64}
+.public-site .card-visual small,.public-site .card-visual b{font-size:9px}
+.public-site .journey-intro p{font-size:14px;line-height:1.9;color:#d0d9d3}
+.public-site .journey-steps p{font-size:12px;line-height:1.8;color:#c6d0ca}
+.public-site .device-copy p{font-size:14px;line-height:1.9;color:#58655e}
+.public-site .device-copy li{font-size:12px;color:#46534c}
+.public-site .closing-section p{font-size:14px;line-height:1.9;color:#d0dad4}
+.public-site .site-footer>span{font-size:10px;color:#b2beb7}
+.public-site .site-links a,.public-site .site-signin{font-size:13px}
+.public-site .site-eyebrow{font-size:10px}
+.public-site .site-text-link{font-size:12px}
+@media(max-width:600px){
+ .public-site .hero-lede{font-size:14px;line-height:1.85;color:#d4dfd9}
+ .public-site .hero-proof{font-size:10px;color:#c8d4cd}
+ .public-site .hero-bottomline{font-size:8px}
+ .public-site .platform-heading>p,.public-site .journey-intro p,.public-site .device-copy p{font-size:13px;line-height:1.85}
+ .public-site .platform-card p{font-size:11px;line-height:1.8}
+ .public-site .journey-steps p{font-size:11px;color:#cbd5cf}
+ .public-site .device-copy li{font-size:11px}
+ .public-site .closing-section p{font-size:13px}
+}
