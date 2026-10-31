@@ -712,3 +712,24 @@ table{
 .side-brand-logo{display:flex;align-items:center;justify-content:center;gap:9px;color:#173b40;font-size:18px;letter-spacing:-.04em}
 .side-brand-logo .brand-mark{width:34px;height:34px;border-radius:10px}
 @media(max-width:900px){.side-brand-logo b{display:none}.side-brand-logo .brand-mark{width:38px;height:38px}}
+
+/* KTBS brand refinement — independent product identity, Kulu-inspired launch palette */
+:root{--ktbs-teal:#087e80;--ktbs-deep:#12363c;--ktbs-aqua:#20b8b1;--ktbs-mist:#eaf6f3}
+body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+h1,h2,h3,h4,.site-brand,.brand-word,.hero-copy h1,.section-intro h2,.install-section h2,.final-cta h2{font-family:"Manrope","DM Sans",sans-serif}
+.public-site{--teal:#087e80;--aqua:#20b8b1;--deep:#12363c}
+.site-brand{gap:11px;font-size:25px;letter-spacing:0}
+.brand-mark{width:39px;height:39px;border-radius:12px;background:linear-gradient(145deg,#087e80,#10a9a5);font-family:"Manrope",sans-serif;font-weight:900;box-shadow:0 5px 13px rgba(8,126,128,.18);position:relative}
+.brand-mark:after{content:"";position:absolute;right:-3px;top:-3px;width:10px;height:10px;border-radius:50%;background:#31c8b7;border:2px solid white}
+.brand-word{display:inline-flex;align-items:center;gap:0;font-family:"Manrope",sans-serif;font-weight:900;letter-spacing:-.085em;line-height:1;color:#153b40}
+.brand-word b{font-weight:900}.brand-word b:last-child{color:#0a9292}
+.hero-copy h1{font-size:clamp(43px,4.65vw,62px);line-height:1.075;letter-spacing:-.065em;font-weight:850}
+.hero-copy h1 em{background:linear-gradient(100deg,#087e80 0%,#12aaa5 100%);background-clip:text;-webkit-background-clip:text;color:transparent}
+.hero-lede{font-size:16px;line-height:1.8;letter-spacing:-.012em}
+.site-eyebrow{letter-spacing:.18em;font-size:10px}
+.site-cta{font-family:"DM Sans",sans-serif;font-weight:800;letter-spacing:-.01em;border-radius:9px}
+.section-intro h2,.install-section h2{font-weight:850;letter-spacing:-.06em}
+.feature-card h3,.steps-grid h3{font-family:"Manrope",sans-serif;font-weight:800;letter-spacing:-.035em}
+.login-brand{gap:12px}.login-brand .brand-word{font-size:28px}
+.side-brand-logo .brand-word{font-size:21px}
+@media(max-width:600px){.hero-copy h1{font-size:clamp(37px,10vw,46px);letter-spacing:-.06em}.site-brand{font-size:23px}.brand-mark{width:36px;height:36px}}
