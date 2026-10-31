@@ -70,7 +70,8 @@
     }
     note.textContent = "Password saved. Opening your KTBS workspace…";
     note.className = "signup-message success";
-    window.history.replaceState({}, document.title, window.location.pathname);
+    const companySlug = new URLSearchParams(window.location.search).get("company");
+    window.history.replaceState({}, document.title, companySlug ? `/login/${encodeURIComponent(companySlug)}` : window.location.pathname);
     window.location.reload();
   });
 
@@ -147,7 +148,7 @@
     message.className = "signup-message";
     message.textContent = "Setting up your secure trial workspace. Please wait.";
     try {
-      const { data, error } = await supabaseClient.functions.invoke("ktbs-start-trial", {
+      const { data, error } = await supabaseClient.functions.invoke("ktbs-start-trial-branded", {
         body: {
           full_name: String(form.full_name || "").trim(),
           company_name: String(form.company_name || "").trim(),
