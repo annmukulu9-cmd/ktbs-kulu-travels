@@ -2,28 +2,32 @@
   const $ = id => document.getElementById(id);
   const landing = $("publicSite");
   const login = $("login");
+  const registration = $("registrationPage");
   const showLogin = () => {
     landing?.classList.add("hidden");
+    registration?.classList.add("hidden");
     login?.classList.remove("hidden");
     $("loginForm")?.classList.remove("hidden");
-    $("signupForm")?.classList.add("hidden");
     $("inviteSetupForm")?.classList.add("hidden");
-    $("showSignup")?.classList.remove("hidden");
-    $("showLogin")?.classList.add("hidden");
-    $("trialLimits")?.classList.add("hidden");
     $("loginMessage").textContent = "Sign in to your KTBS workspace.";
     window.scrollTo({top:0,behavior:"smooth"});
   };
   const showSignup = () => {
-    showLogin();
-    $("loginForm")?.classList.remove("signup-muted");
-    $("showSignup")?.click();
-    $("signupForm")?.scrollIntoView({behavior:"smooth",block:"center"});
+    landing?.classList.add("hidden");
+    login?.classList.add("hidden");
+    registration?.classList.remove("hidden");
+    window.scrollTo({top:0,behavior:"smooth"});
   };
   document.querySelectorAll("[data-open-login]").forEach(button => button.addEventListener("click",showLogin));
   document.querySelectorAll("[data-open-signup]").forEach(button => button.addEventListener("click",showSignup));
-  const invite = new URLSearchParams(location.search).get("type")==="invite" || new URLSearchParams(location.hash.slice(1)).get("type")==="invite";
-  if(invite){landing?.classList.add("hidden");login?.classList.remove("hidden");}
+  const params = new URLSearchParams(location.search);
+  const hash = new URLSearchParams(location.hash.slice(1));
+  const invite = params.get("type")==="invite" || hash.get("type")==="invite";
+  const signupRoute = params.get("signup")==="1" || location.pathname==="/signup";
+  const loginRoute = location.pathname.startsWith("/login/");
+  if(invite){landing?.classList.add("hidden");registration?.classList.add("hidden");login?.classList.remove("hidden");}
+  else if(signupRoute) showSignup();
+  else if(loginRoute) showLogin();
   $("siteYear") && ($("siteYear").textContent=new Date().getFullYear());
   let installPrompt = null;
   const install = async () => {
