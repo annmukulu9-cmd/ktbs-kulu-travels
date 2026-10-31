@@ -22,9 +22,9 @@ module.exports = async function handler(req, res) {
     const brand = result.branding;
     // Keep the installed app identity as KTBS. Company logos remain inside
     // the personalised workspace, not as the device-level app icon.
-    const icon = "/ktbs-icon.svg";
     const resIcons = [
-      { src: icon, sizes: "any", type: "image/svg+xml", purpose: "any" }
+      { src: "/icons/ktbs-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icons/ktbs-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
     ];
     res.setHeader("Content-Type", "application/manifest+json; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=60, s-maxage=60");
