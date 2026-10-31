@@ -1,4 +1,4 @@
-const CACHE="ktbs-static-v2";
+const CACHE="ktbs-static-v3";
 const STATIC=["/styles.css","/ktbs-icon.svg"];
 self.addEventListener("install",event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(STATIC)));
@@ -12,6 +12,14 @@ self.addEventListener("fetch",event=>{
  const request=event.request;
  if(request.method!=="GET")return;
  const url=new URL(request.url);
- if(url.origin!==self.location.origin || request.mode==="navigate" || url.pathname.startsWith("/rest/") || url.pathname.startsWith("/auth/") || url.pathname.startsWith("/functions/"))return;
- if(STATIC.includes(url.pathname)){event.respondWith(caches.match(request).then(cached=>cached||fetch(request)));return;}
+ if(url.origin!==self.location.origin)return;
+ // A navigation fetch handler is required for Chrome to recognise this as an installable PWA.
+ if(request.mode==="navigate"){
+   event.respondWith(fetch(request).catch(()=>caches.match("/")));
+   return;
+ }
+ if(url.pathname.startsWith("/rest/") || url.pathname.startsWith("/auth/") || url.pathname.startsWith("/functions/"))return;
+ if(STATIC.includes(url.pathname)){
+   event.respondWith(caches.match(request).then(cached=>cached||fetch(request)));
+ }
 });
