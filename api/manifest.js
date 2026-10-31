@@ -20,12 +20,7 @@ module.exports = async function handler(req, res) {
     }
     const company = result.company;
     const brand = result.branding;
-    const origin = "https://ktbs-kulu-travels.vercel.app";
-    const icon = brand.logo_url
-      ? (brand.logo_url.startsWith("/") ? origin + brand.logo_url : brand.logo_url)
-      : origin + "/ktbs-icon.svg";
-    const iconPath = icon.split("?")[0].toLowerCase();
-    const iconType = iconPath.endsWith(".webp") ? "image/webp" : iconPath.endsWith(".jpg") || iconPath.endsWith(".jpeg") ? "image/jpeg" : iconPath.endsWith(".png") ? "image/png" : "image/svg+xml";
+    const icon = "/ktbs-icon.svg";
     res.setHeader("Content-Type", "application/manifest+json; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300");
     res.status(200).json({
@@ -39,8 +34,8 @@ module.exports = async function handler(req, res) {
       background_color: brand.background_color,
       theme_color: brand.primary_color,
       icons: [
-        { src: icon, sizes: "192x192", type: iconType, purpose: "any" },
-        { src: icon, sizes: "512x512", type: icon.endsWith(".svg") ? "image/svg+xml" : "image/png", purpose: "any maskable" }
+        { src: icon, sizes: "192x192", type: "image/svg+xml", purpose: "any" },
+        { src: icon, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
       ]
     });
   } catch {
