@@ -20,15 +20,10 @@ module.exports = async function handler(req, res) {
     }
     const company = result.company;
     const brand = result.branding;
-    const companyLogo = typeof brand.logo_url === "string" && brand.logo_url.trim()
-      ? brand.logo_url.trim()
-      : null;
-    const icon = companyLogo || "/ktbs-icon.svg";
-    const iconType = companyLogo
-      ? (/\\.jpe?g(?:[?#]|$)/i.test(companyLogo) ? "image/jpeg"
-        : /\\.webp(?:[?#]|$)/i.test(companyLogo) ? "image/webp"
-        : "image/png")
-      : "image/svg+xml";
+    // Keep the installed app identity as KTBS. Company logos remain inside
+    // the personalised workspace, not as the device-level app icon.
+    const icon = "/ktbs-icon.svg";
+    const resIcon = { src: icon, sizes: "any", type: "image/svg+xml", purpose: "any" };
     res.setHeader("Content-Type", "application/manifest+json; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=60, s-maxage=60");
     res.status(200).json({
@@ -41,9 +36,7 @@ module.exports = async function handler(req, res) {
       display: "standalone",
       background_color: brand.background_color,
       theme_color: brand.primary_color,
-      icons: [
-        { src: icon, type: iconType, purpose: "any" }
-      ]
+      icons: [resIcon]
     });
   } catch {
     res.status(503).json({ error: "Could not build app manifest." });
