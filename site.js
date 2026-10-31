@@ -28,7 +28,7 @@
   if(invite){landing?.classList.add("hidden");registration?.classList.add("hidden");login?.classList.remove("hidden");}
   else if(signupRoute) showSignup();
   else if(loginRoute) showLogin();
-  const companyFromPath = location.pathname.match(/^\\/login\\/([a-z0-9-]+)\\/?$/i)?.[1];
+  const companyFromPath = location.pathname.match(/^\/login\/([a-z0-9-]+)\/?$/i)?.[1];
   const companySlug = companyFromPath || new URLSearchParams(location.search).get("company");
   if(companySlug){
     const manifestLink = document.querySelector('link[rel="manifest"]');
