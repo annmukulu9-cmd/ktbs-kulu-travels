@@ -1134,3 +1134,41 @@ body{background:#fbfcfa;color:#202321}
  .public-site .device-copy li{font-size:11px}
  .public-site .closing-section p{font-size:13px}
 }
+
+/* Standalone free-trial registration experience */
+.registration-shell{min-height:100vh;background:radial-gradient(circle at 10% 5%,rgba(69,255,239,.09),transparent 30%),#f5f7f3;padding:44px 20px 60px;display:flex;align-items:flex-start;justify-content:center;color:#202725}
+.registration-card{width:min(100%,760px);background:#fff;border:1px solid #e5ebe6;border-radius:13px;padding:36px 42px 30px;box-shadow:0 22px 70px rgba(23,43,36,.09)}
+.registration-brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:#202725;font-family:"Manrope",sans-serif;font-size:23px;font-weight:900;letter-spacing:-.05em}
+.registration-brand .brand-mark{width:36px;height:36px;border-radius:10px;background:#202725;color:#45ffef;display:grid;place-items:center}
+.registration-kicker{font-size:9px;letter-spacing:.17em;font-weight:900;color:#087e80;margin-top:31px}
+.registration-card h1{font-family:"Manrope",sans-serif;font-size:clamp(31px,4vw,43px);line-height:1.08;letter-spacing:-.065em;margin:12px 0 10px;color:#202725}
+.registration-intro{font-size:14px;line-height:1.8;color:#65736c;margin:0 0 25px;max-width:570px}
+.registration-form{display:grid;gap:19px}
+.registration-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px 17px}
+.registration-form label{display:grid;gap:7px;font-size:11px;font-weight:800;color:#3c4942}
+.registration-form input:not([type=file]),.registration-form select{width:100%;min-height:44px;border:1px solid #dce5df;border-radius:5px;padding:10px 12px;background:#fff;color:#26312c;font:500 13px "DM Sans",sans-serif;outline:none}
+.registration-form input:focus,.registration-form select:focus{border-color:#087e80;box-shadow:0 0 0 3px rgba(8,126,128,.09)}
+.registration-branding{background:#f6f9f6;border:1px solid #e5ece7;border-radius:7px;padding:20px;display:grid;grid-template-columns:1fr 210px;gap:16px 22px;align-items:center}
+.registration-step{font-size:8px;letter-spacing:.15em;color:#087e80;font-weight:900}
+.registration-branding h2{font-family:"Manrope",sans-serif;font-size:19px;letter-spacing:-.04em;margin:7px 0 5px;color:#202725}
+.registration-branding-copy p{font-size:11px;line-height:1.7;color:#6b7971;margin:0;max-width:390px}
+.logo-upload{min-height:115px;border:1px dashed #a9c3b9;border-radius:6px;background:#fff;display:flex!important;align-items:center;justify-content:center;gap:6px;cursor:pointer;text-align:center;padding:12px}
+.logo-upload-icon{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#e5f8f3;color:#087e80;font-size:18px}
+.logo-upload b{font-size:10px;color:#26332d}.logo-upload small{font-size:8px;font-weight:500;color:#87938c}.logo-upload input{display:none}
+.logo-preview-wrap{grid-column:1/-1;display:flex;align-items:center;gap:12px;border-top:1px solid #e4ebe6;padding-top:13px}
+.logo-preview-wrap img{width:58px;height:48px;object-fit:contain;background:#fff;border:1px solid #e3eae5;border-radius:4px;padding:4px}
+.logo-preview-wrap span{font-size:10px;color:#66736c;flex:1}
+.logo-preview-wrap button{border:0;background:none;color:#087e80;font-size:10px;font-weight:800;cursor:pointer}
+.suggested-brand-colors{grid-column:1/-1;border-top:1px solid #e4ebe6;padding-top:13px;display:grid;gap:10px}
+.suggested-brand-colors>span{font-size:9px;font-weight:900;color:#5e6c64}
+.suggested-brand-colors>div{display:flex;gap:18px;flex-wrap:wrap}
+.suggested-brand-colors label{display:flex;align-items:center;gap:7px;font-size:9px;color:#65736b}
+.suggested-brand-colors input[type=color]{width:30px;height:26px;border:0;padding:0;background:transparent;cursor:pointer}
+.registration-submit{width:100%;min-height:49px;justify-content:center;font-size:12px}
+.registration-reassurance{text-align:center;font-size:9px;color:#78857d}
+.registration-form #signupMessage{display:block;text-align:center;font-size:11px;line-height:1.6;color:#64736b}
+.registration-form #signupMessage.success{color:#087e80;font-weight:700}
+.registration-form #signupMessage.error{color:#b42318}
+.registration-login{text-align:center;border-top:1px solid #edf0ec;margin-top:21px;padding-top:17px;font-size:11px;color:#69766f}
+.registration-login button{border:0;background:none;color:#087e80;font-size:11px;font-weight:900;cursor:pointer}
+@media(max-width:620px){.registration-shell{padding:15px 12px 35px}.registration-card{padding:25px 19px 23px;border-radius:9px}.registration-kicker{margin-top:25px}.registration-grid{grid-template-columns:1fr;gap:13px}.registration-branding{grid-template-columns:1fr;gap:13px;padding:15px}.logo-upload{min-height:95px}.registration-card h1{font-size:32px}.registration-intro{font-size:12px}}
