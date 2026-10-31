@@ -1,13 +1,13 @@
 {
-  "id": "/",
-  "name": "KTBS — Travel Business Software",
-  "short_name": "KTBS",
-  "description": "Manage your travel business in one secure workspace.",
-  "start_url": "/",
+  "id": "/login/kulu-travels",
+  "name": "Kulu Travels · KTBS",
+  "short_name": "Kulu Travels",
+  "description": "Your Kulu Travels business workspace, powered by KTBS.",
+  "start_url": "/login/kulu-travels",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f5fbfa",
-  "theme_color": "#202222",
+  "background_color": "#f8f8f4",
+  "theme_color": "#202725",
   "orientation": "any",
   "icons": [
     {
