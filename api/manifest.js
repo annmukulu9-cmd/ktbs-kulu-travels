@@ -23,7 +23,7 @@ module.exports = async function handler(req, res) {
     // Keep the installed app identity as KTBS. Company logos remain inside
     // the personalised workspace, not as the device-level app icon.
     const icon = "/ktbs-icon.svg";
-    const resIcon = { src: icon, sizes: "any", type: "image/svg+xml", purpose: "any" };
+    const resIcons = [\n      { src: icon, sizes: "192x192", type: "image/svg+xml", purpose: "any" },\n      { src: icon, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }\n    ];
     res.setHeader("Content-Type", "application/manifest+json; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=60, s-maxage=60");
     res.status(200).json({
@@ -36,7 +36,7 @@ module.exports = async function handler(req, res) {
       display: "standalone",
       background_color: brand.background_color,
       theme_color: brand.primary_color,
-      icons: [resIcon]
+      icons: resIcons
     });
   } catch {
     res.status(503).json({ error: "Could not build app manifest." });
