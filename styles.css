@@ -675,3 +675,8 @@ table{
 .table-scroll table{min-width:920px;width:100%}
 .table-scroll select,.table-scroll input[type=date]{min-width:130px;max-width:170px;padding:8px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--text);font:inherit;font-size:12px}
 #nav button[data-page="platform-admin"]{color:#0b7f89}
+
+/* Company workspace selector */
+.workspace-switcher{max-width:190px;min-width:150px;padding:9px 30px 9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);font-size:12px;font-weight:650}
+.workspace-switcher:disabled{opacity:.6;cursor:wait}
+@media(max-width:760px){.workspace-switcher{max-width:130px;min-width:110px;font-size:11px}}
