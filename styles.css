@@ -733,3 +733,73 @@ h1,h2,h3,h4,.site-brand,.brand-word,.hero-copy h1,.section-intro h2,.install-sec
 .login-brand{gap:12px}.login-brand .brand-word{font-size:28px}
 .side-brand-logo .brand-word{font-size:21px}
 @media(max-width:600px){.hero-copy h1{font-size:clamp(37px,10vw,46px);letter-spacing:-.06em}.site-brand{font-size:23px}.brand-mark{width:36px;height:36px}}
+
+/* Kulu Travels signature palette: midnight charcoal, vivid lagoon turquoise and soft ivory */
+:root{--ktbs-ink:#191919;--ktbs-charcoal:#222222;--ktbs-turquoise:#45ffef;--ktbs-muted:#747b7a;--ktbs-ivory:#fbfcfa}
+body{background:#fbfcfa;color:#202321}
+.public-site{--teal:#202222;--aqua:#45ffef;--deep:#1c2020;background:#fbfcfa;color:#202222}
+.site-nav{max-width:1320px}
+.site-brand{color:#1d2221}
+.brand-mark{background:#202222;color:#45ffef;box-shadow:0 5px 16px rgba(20,35,34,.12)}
+.brand-mark:after{background:#45ffef;border-color:#fbfcfa}
+.brand-word{color:#202222}
+.brand-word b:last-child{color:#202222}
+.site-links a,.site-signin,.site-text-link{color:#424847}
+.site-links a:hover,.site-signin:hover,.site-text-link:hover{color:#087e80}
+.site-cta{background:#202222;color:#45ffef;box-shadow:0 8px 20px rgba(20,25,25,.13)}
+.site-cta:hover{background:#090b0b;color:#45ffef}
+.site-hero{max-width:1320px}
+.site-eyebrow{color:#168f89}
+.site-eyebrow>span{background:#45dccc}
+.hero-copy h1{color:#202222;font-size:clamp(43px,4.55vw,61px);letter-spacing:-.067em}
+.hero-copy h1 em{background:linear-gradient(105deg,#087e80 0%,#27cfc4 55%,#45ffef 100%);background-clip:text;-webkit-background-clip:text;color:transparent}
+.hero-lede{color:#66716f}
+.hero-proof{color:#747e7b}
+.proof-check{background:#e5fbf7;color:#087e80}
+.hero-visual:before{background:radial-gradient(circle,#e8faf7 0,#f3fbf9 57%,rgba(255,255,255,0) 72%)}
+.visual-orbit{border-color:rgba(8,126,128,.16)}
+.dashboard-preview{border-color:#e2e9e6;box-shadow:0 25px 65px rgba(28,48,45,.14)}
+.preview-top b{color:#087e80}
+.preview-welcome strong{color:#222927}
+.preview-stats>div{border-color:#e8efec}
+.preview-stats b{color:#202827}
+.preview-icon{background:#e5fbf7;color:#087e80}
+.preview-pill{color:#087e80;background:#e5fbf7}
+.floating-note{border-color:#e5eeeb;box-shadow:0 12px 35px rgba(25,50,45,.11)}
+.note-symbol{background:#e4faf6;color:#087e80}
+.note-teal{background:#202222;color:#45ffef}
+.trust-strip{background:#f1f7f5;border-color:#e8efec}
+.trust-strip>span{color:#687571}.trust-strip b{color:#384441}.trust-strip i{background:#9ecbc3}
+.site-section{background:#fbfcfa}
+.section-intro h2,.install-section h2{color:#202222}
+.section-intro h2 em,.install-section h2 em{color:#087e80}
+.section-intro p{color:#687471}
+.feature-card{border-color:#e6eeeb;box-shadow:0 4px 18px rgba(25,45,40,.025)}
+.feature-card:hover{box-shadow:0 15px 35px rgba(25,55,48,.09)}
+.feature-icon{background:#e5f8f4;color:#087e80}
+.feature-card h3,.steps-grid h3{color:#252b29}
+.feature-card p,.steps-grid p{color:#75807c}
+.steps-section{background:#f2f7f5}
+.steps-grid article{border-color:#e3ece8}
+.steps-grid article>span{color:#087e80}
+.install-section p,.install-section li{color:#697571}
+.device-laptop{border-color:#252b2a;background:#e7f6f2}
+.device-appbar{color:#087e80}
+.device-mini-grid i{border-color:#e4efec;background:#f8fbfa}
+.device-phone{border-color:#252b2a}
+.phone-logo{background:#202222;color:#45ffef}
+.phone-tile{background:#e6f8f4;color:#087e80}
+.final-cta{background:#1d2221;color:#fff}
+.final-cta .site-eyebrow{color:#45ffef}
+.final-cta h2{color:#fff}
+.final-cta p{color:#d0d9d6}
+.final-cta .site-cta{background:#45ffef;color:#171d1c;box-shadow:none}
+.final-cta .site-cta:hover{background:#b5fff7;color:#171d1c}
+.site-footer{border-top:1px solid #e9efec}
+.site-footer>span{color:#78827e}
+.login-shell{background:linear-gradient(135deg,#fbfcfa,#eaf8f5)}
+.login-brand{color:#202222}
+.login-brand .brand-mark{background:#202222;color:#45ffef}
+.side-brand-logo{color:#202222}
+.side-brand-logo .brand-mark{background:#202222;color:#45ffef}
+@media(max-width:600px){.site-nav-actions .site-cta{background:#202222;color:#45ffef}.hero-copy h1 em{background:linear-gradient(105deg,#087e80,#23cfc4);background-clip:text;-webkit-background-clip:text;color:transparent}}
