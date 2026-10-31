@@ -82,7 +82,7 @@
   let selectedLogo = null;
   let logoData = "";
   let logoMime = "";
-  const hex = n => "#" + n.toString(16).padStart(2, "0");
+  const hex = n => n.toString(16).padStart(2, "0");
   function readableBrandColors(file) {
     return new Promise(resolve => {
       const image = new Image();
@@ -104,8 +104,8 @@
           const candidates=[...buckets.entries()].sort((a,b)=>b[1]-a[1]).map(([key])=>key.split(",").map(Number))
             .filter(([r,g,b])=>Math.max(r,g,b)-Math.min(r,g,b)>28 && (r+g+b)>100 && (r+g+b)<690);
           const chosen=candidates[0]||[8,126,128];
-          const primary=hex(chosen[0])+hex(chosen[1])+hex(chosen[2]);
-          const accent=hex(Math.min(255,Math.round(chosen[0]*.35+166)))+hex(Math.min(255,Math.round(chosen[1]*.35+210)))+hex(Math.min(255,Math.round(chosen[2]*.35+205)));
+          const primary="#"+hex(chosen[0])+hex(chosen[1])+hex(chosen[2]);
+          const accent="#"+hex(Math.min(255,Math.round(chosen[0]*.35+166)))+hex(Math.min(255,Math.round(chosen[1]*.35+210)))+hex(Math.min(255,Math.round(chosen[2]*.35+205)));
           resolve({primary,accent});
         } catch { resolve({primary:"#202725",accent:"#45ffef"}); }
         URL.revokeObjectURL(objectUrl);
