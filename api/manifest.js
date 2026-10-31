@@ -24,15 +24,14 @@ module.exports = async function handler(req, res) {
     // the personalised workspace, not as the device-level app icon.
     const icon = "/ktbs-icon.svg";
     const resIcons = [
-      { src: icon, sizes: "192x192", type: "image/svg+xml", purpose: "any" },
-      { src: icon, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
+      { src: icon, sizes: "any", type: "image/svg+xml", purpose: "any" }
     ];
     res.setHeader("Content-Type", "application/manifest+json; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=60, s-maxage=60");
     res.status(200).json({
       id: "/login/" + slug,
       name: company.name + " · KTBS",
-      short_name: company.name.slice(0, 18),
+      short_name: "KTBS",
       description: "Your " + company.name + " business workspace, powered by KTBS.",
       start_url: "/login/" + slug,
       scope: "/",
