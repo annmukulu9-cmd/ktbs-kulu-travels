@@ -1590,6 +1590,39 @@ async function toggleStaffStatus(id,current){
 }
 async function changeRole(id,role){if(!isAdmin())return;const r=await sb.from('profiles').update({role}).eq('id',id);if(r.error)return alert(r.error.message);await refresh();showStaff()}
 
+async function loadWorkspaceOptions(){
+  const selector=$('workspaceSwitcher');
+  if(!selector)return;
+  const {data:memberships,error}=await sb.from('organization_memberships')
+    .select('organization_id')
+    .eq('user_id',me.id)
+    .eq('active',true);
+  if(error){selector.classList.add('hidden');return;}
+  const ids=[...new Set((memberships||[]).map(x=>x.organization_id).filter(Boolean))];
+  if(ids.length<2){selector.classList.add('hidden');return;}
+  const {data:orgs,error:orgError}=await sb.from('organizations')
+    .select('id,name,status,country,currency')
+    .in('id',ids)
+    .in('status',['trial','active','past_due']);
+  if(orgError||!orgs||orgs.length<2){selector.classList.add('hidden');return;}
+  selector.innerHTML=orgs.map(o=>'<option value="'+esc(o.id)+'">'+esc(o.name)+'</option>').join('');
+  selector.value=organization.id;
+  selector.classList.remove('hidden');
+  selector.onchange=()=>switchWorkspace(selector.value);
+}
+async function switchWorkspace(orgId){
+  if(!orgId||orgId===organization?.id)return;
+  const selector=$('workspaceSwitcher');
+  if(selector)selector.disabled=true;
+  const {error}=await sb.from('user_organization_context').upsert({
+    user_id:me.id,organization_id:orgId,updated_at:new Date().toISOString()
+  },{onConflict:'user_id'});
+  if(selector)selector.disabled=false;
+  if(error){alert('Could not switch workspace: '+error.message);if(selector)selector.value=organization.id;return;}
+  $('content').innerHTML='<div class="page-card"><p>Opening workspace…</p></div>';
+  await enterApp(me);
+}
+
 async function startApp(){if(!window.KTBS_SUPABASE_URL||window.KTBS_SUPABASE_URL.includes('PASTE_')){$('loginMessage').textContent='Supabase connection is not configured.';return}const {data:{session}}=await sb.auth.getSession();if(session)await enterApp(session.user)}
 async function enterApp(user){
   me=user;
@@ -1634,6 +1667,7 @@ async function enterApp(user){
   }
   const organizationLabel=$('organizationName');
   if(organizationLabel)organizationLabel.textContent=organization.name;
+  await loadWorkspaceOptions();
 
   if(!profile.active){
     return alert('This staff account is inactive.');
