@@ -30,6 +30,10 @@
   else if(loginRoute) showLogin();
   const companyFromPath = location.pathname.match(/^\\/login\\/([a-z0-9-]+)\\/?$/i)?.[1];
   const companySlug = companyFromPath || new URLSearchParams(location.search).get("company");
+  if(companySlug){
+    const manifestLink = document.querySelector('link[rel="manifest"]');
+    if(manifestLink) manifestLink.href = "/api/manifest?company=" + encodeURIComponent(companySlug);
+  }
   if(companySlug && login){
     const loadCompanyBranding = async () => {
       try {
