@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/login/:slug",
+      "destination": "/"
+    },
+    {
+      "source": "/signup",
+      "destination": "/?signup=1"
+    }
+  ]
+}
