@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="112" fill="#087e80"/>
-  <path d="M82 110h74v118l110-118h94L230 252l142 150h-96L156 280v122H82z" fill="#ffffff"/>
-  <path d="M375 112h55v292h-55z" fill="#45ffef" opacity=".95"/>
+  <rect x="36" y="36" width="440" height="440" rx="88" fill="none" stroke="#45ffef" stroke-width="10"/>
+  <text x="256" y="295" text-anchor="middle" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="126" font-weight="800" letter-spacing="2">KTBS</text>
+  <path d="M128 348h256" stroke="#45ffef" stroke-width="12" stroke-linecap="round"/>
 </svg>
