@@ -1056,7 +1056,9 @@ function hotelDestinationGroup(value){
   'laikipia':'Laikipia','nyanyuki':'Laikipia','lew a conservancy':'Laikipia',
   'kajiado':'Kajiado','kitengela':'Kajiado','magadi road':'Kajiado',
   'zanzibar':'Zanzibar','matemwe':'Zanzibar','bwejuu':'Zanzibar','kendwa':'Zanzibar','kiwengwa':'Zanzibar','kizimkazi':'Zanzibar','nungwi':'Zanzibar','pongwe':'Zanzibar','uroa':'Zanzibar','jambiani':'Zanzibar','stone town':'Zanzibar','bawe':'Zanzibar','marumbi':'Zanzibar','mangapwani':'Zanzibar','mchangamle':'Zanzibar',
-  'amboseli':'Amboseli','naivasha':'Naivasha','malindi':'Malindi','watamu':'Watamu','mombasa':'Mombasa','lamu':'Lamu','kilifi':'Kilifi','nakuru':'Nakuru','nyeri':'Nyeri','limuru':'Limuru','musanze':'Musanze'
+  'amboseli':'Amboseli','naivasha':'Naivasha','malindi':'Malindi','watamu':'Watamu','mombasa':'Mombasa','lamu':'Lamu','kilifi':'Kilifi','nakuru':'Nakuru','nyeri':'Nyeri','limuru':'Limuru','musanze':'Musanze',
+  'talek':'Maasai Mara','keekorok':'Maasai Mara','lemek':'Maasai Mara','olderkesi':'Maasai Mara',
+  'arusha':'Arusha','serengeti':'Serengeti','ngorongoro':'Ngorongoro'
  };
  return canonical[key]||first;
 }
