@@ -2,7 +2,7 @@ const { createClient } = window.supabase;
 const sb = createClient(window.KTBS_SUPABASE_URL, window.KTBS_SUPABASE_ANON_KEY);
 
 const STATUS=['New Enquiry','Quotation','Confirmed','Partially Paid','Fully Paid','In Progress','COMPLETED','Cancelled'];
-let page='dashboard', me=null, profile=null, organization=null, subscription=null, platformAdmin=false;
+let page='dashboard', me=null, profile=null, organization=null, subscription=null, platformAdmin=false, organizationBranding=null;
 let cache={clients:[],quotations:[],quotation_items:[],bookings:[],suppliers:[],hotels:[],services:[],history:[],expenses:[],payments:[],supplierPayments:[],profiles:[]};
 
 const $=id=>document.getElementById(id);
@@ -1450,17 +1450,39 @@ async function sendKtbsSandboxStk(event){
  if(button)button.disabled=false;
 }
 
-function settingsPage(){$('content').innerHTML=`<div class="page-grid"><div class="page-card"><h3>Current User</h3><p><b>${esc(profile?.full_name||'')}</b><br>${esc(me?.email||'')}<br>${badge(profile?.role?.toUpperCase())}</p></div><div class="page-card"><h3>Permissions</h3><p>
-  Consultants can create clients, quotations and operational records.
-  Saved client and quotation records are protected from consultant
-  editing and deletion. Booking updates remain available to consultants
-  for day-to-day operations.
-</p>
-
-<p>
-  Administrators have full management access, including staff accounts,
-  master data, client records and quotation records.
-</p></div><div class="page-card"><h3>Staff Accounts</h3><p>Login accounts are managed by Supabase Authentication. KTBS profiles store staff roles.</p>${isAdmin()?`<button class="primary" onclick="showStaff()">View Staff & Roles</button>`:'<p>Admin only.</p>'}</div></div>`}
+function settingsPage(){
+ const logo=organizationBranding?.logo_url||'';
+ $('content').innerHTML=`<div class="page-grid">
+ <div class="page-card"><h3>Workspace Branding</h3><p>Upload the company logo for this workspace.</p>
+ ${logo?`<img src="${esc(logo)}" alt="Workspace logo" style="max-width:180px;max-height:100px;object-fit:contain;display:block;margin:12px 0">`:'<p>No logo uploaded yet.</p>'}
+ ${isAdmin()?`<form id="workspaceLogoForm"><label>Company logo (PNG/JPG/WebP, max 1 MB)<input id="workspaceLogoFile" type="file" accept="image/png,image/jpeg,image/webp" required></label><button class="primary" type="submit">Save Workspace Logo</button><p id="workspaceLogoStatus" role="status"></p></form>`:'<p>Only workspace admins can change branding.</p>'}
+ </div>
+ <div class="page-card"><h3>Current User</h3><p><b>${esc(profile?.full_name||'')}</b><br>${esc(me?.email||'')}<br>${badge(profile?.role?.toUpperCase())}</p></div>
+ <div class="page-card"><h3>Permissions</h3><p>Consultants can create clients, quotations and operational records. Saved client and quotation records are protected from consultant editing and deletion. Booking updates remain available to consultants for day-to-day operations.</p><p>Administrators have full management access, including staff accounts, master data, client records and quotation records.</p></div>
+ <div class="page-card"><h3>Staff Accounts</h3><p>Login accounts are managed by Supabase Authentication. KTBS profiles store staff roles.</p>${isAdmin()?'<button class="primary" onclick="showStaff()">View Staff & Roles</button>':'<p>Admin only.</p>'}</div></div>`;
+ const form=$('workspaceLogoForm');
+ if(form)form.onsubmit=async e=>{
+  e.preventDefault();if(!isAdmin())return alert('Admin access required.');
+  const file=$('workspaceLogoFile')?.files?.[0];if(!file)return;
+  if(file.size>1024*1024)return alert('Please choose a logo under 1 MB.');
+  const status=$('workspaceLogoStatus');if(status)status.textContent='Saving logo…';
+  const reader=new FileReader();
+  reader.onload=async()=>{
+   const logoUrl=String(reader.result||'');
+   const {error}=await sb.from('organization_branding').upsert({organization_id:organization.id,logo_url:logoUrl,logo_path:file.name,updated_at:new Date().toISOString()},{onConflict:'organization_id'});
+   if(error){if(status)status.textContent='Could not save logo: '+error.message;return;}
+   organizationBranding={...(organizationBranding||{}),logo_url:logoUrl,logo_path:file.name};
+   renderWorkspaceLogo();settingsPage();
+  };
+  reader.onerror=()=>{if(status)status.textContent='Could not read this image.';};
+  reader.readAsDataURL(file);
+ };
+}
+function renderWorkspaceLogo(){
+ const host=$('workspaceBrandLogo');if(!host)return;
+ const logo=organizationBranding?.logo_url;
+ host.innerHTML=logo?`<img src="${esc(logo)}" alt="${esc(organization?.name||'Workspace logo')}" style="max-width:150px;max-height:64px;object-fit:contain">`:'<span class="brand-mark">K</span><span class="brand-word"><b>K</b><b>T</b><b>B</b><b>S</b></span>';
+}
  async function showStaff(){
   const rows=Array.isArray(cache.profiles)?cache.profiles:[];
 
