@@ -1041,38 +1041,57 @@ function supplierTable(rows){
   return rows.length?`<table><thead><tr><th>Supplier</th><th>Contact Person</th><th>Phone</th><th>Email</th><th>Type</th><th></th></tr></thead><tbody>${rows.map(s=>`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.contact_person||s.contact||'')}</td><td>${esc(s.phone||'')}</td><td>${esc(s.email||'')}</td><td>${esc(s.type||'')}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('suppliers','${s.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No supplier records match your search.</div>';
 }
 function filterSupplierList(){const v=($('supplierFilter')?.value||'').toLowerCase();$('supplierTable').innerHTML=supplierTable(cache.suppliers.filter(s=>[s.name,s.contact_person,s.contact,s.phone,s.email,s.type].join(' ').toLowerCase().includes(v)))}
+function hotelDestinationGroup(value){
+ const raw=String(value||'').trim();
+ if(!raw)return 'No destination assigned';
+ let first=raw.split(',')[0].trim();
+ // Group nearby property areas under the main destination (e.g. Diani/Ukunda, Mara-Talek, Nairobi-Karen).
+ first=first.split(/\\s*[-–]\\s*/)[0].trim();
+ first=first.replace(/[.\\s]+$/g,'').replace(/\\s+/g,' ');
+ const key=first.toLowerCase();
+ const canonical={
+  'diani':'Diani','ukunda':'Diani','diani beach':'Diani',
+  'maasai mara':'Maasai Mara','mara':'Maasai Mara',
+  'nairobi':'Nairobi','karen':'Nairobi','westlands':'Nairobi','gigiri':'Nairobi','kitisuru estate':'Nairobi',
+  'laikipia':'Laikipia','nyanyuki':'Laikipia','lew a conservancy':'Laikipia',
+  'kajiado':'Kajiado','kitengela':'Kajiado','magadi road':'Kajiado',
+  'zanzibar':'Zanzibar','matemwe':'Zanzibar','bwejuu':'Zanzibar','kendwa':'Zanzibar','kiwengwa':'Zanzibar','kizimkazi':'Zanzibar','nungwi':'Zanzibar','pongwe':'Zanzibar','uroa':'Zanzibar','jambiani':'Zanzibar','stone town':'Zanzibar','bawe':'Zanzibar','marumbi':'Zanzibar','mangapwani':'Zanzibar','mchangamle':'Zanzibar',
+  'amboseli':'Amboseli','naivasha':'Naivasha','malindi':'Malindi','watamu':'Watamu','mombasa':'Mombasa','lamu':'Lamu','kilifi':'Kilifi','nakuru':'Nakuru','nyeri':'Nyeri','limuru':'Limuru','musanze':'Musanze'
+ };
+ return canonical[key]||first;
+}
 async function hotelsPage(){
-  const actions='<button class="primary" onclick="newHotel()">+ New Hotel</button><span class="muted">Hotels organized by destination</span>';
-  $('content').innerHTML=`<div class="toolbar"><input id="hotelFilter" placeholder="Search hotels by name, destination or contact…" oninput="filterHotelList()"><select id="hotelDestinationFilter" onchange="filterHotelList()"><option value="">All destinations</option></select>${actions}</div>${tableWrap('<div id="hotelTable" class="empty">Loading hotel records…</div>')}`;
-  const target=$('hotelTable');
-  const result=await sb.from('hotels').select('*').eq('organization_id',organization.id).order('name');
-  if(!target)return;
-  if(result.error){target.innerHTML='Unable to load hotel records: '+esc(result.error.message);return;}
-  cache.hotels=result.data||[];
-  const destinations=[...new Set(cache.hotels.map(h=>String(h.destination||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-  $('hotelDestinationFilter').innerHTML='<option value="">All destinations</option>'+destinations.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('')+'<option value="__unassigned">No destination assigned</option>';
-  target.innerHTML=hotelTable(cache.hotels);
-  if(!cache.hotels.length)target.innerHTML='No hotel records were returned for this workspace.';
+ const actions='<button class="primary" onclick="newHotel()">+ New Hotel</button><span class="muted">Hotels organized by destination</span>';
+ $('content').innerHTML=`<div class="toolbar"><input id="hotelFilter" placeholder="Search hotels by name, destination or contact…" oninput="filterHotelList()"><select id="hotelDestinationFilter" onchange="filterHotelList()"><option value="">All destinations</option></select>${actions}</div>${tableWrap('<div id="hotelTable" class="empty">Loading hotel records…</div>')}`;
+ const target=$('hotelTable');
+ const result=await sb.from('hotels').select('*').eq('organization_id',organization.id).order('name');
+ if(!target)return;
+ if(result.error){target.innerHTML='Unable to load hotel records: '+esc(result.error.message);return;}
+ cache.hotels=result.data||[];
+ const destinations=[...new Set(cache.hotels.map(h=>hotelDestinationGroup(h.destination)).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+ $('hotelDestinationFilter').innerHTML='<option value="">All destinations</option>'+destinations.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
+ target.innerHTML=hotelTable(cache.hotels);
+ if(!cache.hotels.length)target.innerHTML='No hotel records were returned for this workspace.';
 }
 function hotelTable(rows){
-  if(!rows.length)return '<div class="empty">No hotel records match your search.</div>';
-  const groups={};
-  rows.forEach(h=>{const destination=String(h.destination||'').trim()||'No destination assigned';(groups[destination]||(groups[destination]=[])).push(h)});
-  return Object.entries(groups).sort(([a],[b])=>a.localeCompare(b)).map(([destination,hotels])=>`
-    <section class="hotel-destination-group" style="margin:0 0 22px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;margin-bottom:8px;background:linear-gradient(110deg,#eaf6f5,#f7fbfb);border:1px solid #d7e9e8;border-radius:10px">
-        <div><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#087e80;font-weight:800">DESTINATION</div><h3 style="margin:4px 0 0;color:#173c3d;font-size:17px">${esc(destination)}</h3></div>
-        <span class="badge info">${hotels.length} hotel${hotels.length===1?'':'s'}</span>
-      </div>
-      <div class="table-scroll"><table><thead><tr><th>Hotel</th><th>Contact Person</th><th>Phone</th><th>Email</th><th></th></tr></thead><tbody>${hotels.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''))).map(h=>`<tr><td><b>${esc(h.name)}</b></td><td>${esc(h.contact_person||h.contact||'')}</td><td>${esc(h.phone||'')}</td><td>${esc(h.email||'')}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('hotels','${h.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table></div>
-    </section>`).join('');
+ if(!rows.length)return '<div class="empty">No hotel records match your search.</div>';
+ const groups={};
+ rows.forEach(h=>{const destination=hotelDestinationGroup(h.destination);(groups[destination]||(groups[destination]=[])).push(h)});
+ return Object.entries(groups).sort(([a],[b])=>a.localeCompare(b)).map(([destination,hotels])=>`
+  <section class="hotel-destination-group" style="margin:0 0 22px">
+   <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;margin-bottom:8px;background:linear-gradient(110deg,#eaf6f5,#f7fbfb);border:1px solid #d7e9e8;border-radius:10px">
+    <div><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#087e80;font-weight:800">DESTINATION</div><h3 style="margin:4px 0 0;color:#173c3d;font-size:17px">${esc(destination)}</h3></div>
+    <span class="badge info">${hotels.length} hotel${hotels.length===1?'':'s'}</span>
+   </div>
+   <div class="table-scroll"><table><thead><tr><th>Hotel</th><th>Contact Person</th><th>Phone</th><th>Email</th><th></th></tr></thead><tbody>${hotels.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''))).map(h=>`<tr><td><b>${esc(h.name)}</b><div class="muted" style="font-size:11px">${esc(h.destination||'')}</div></td><td>${esc(h.contact_person||h.contact||'')}</td><td>${esc(h.phone||'')}</td><td>${esc(h.email||'')}</td><td>${isAdmin()? `<button class="link-btn" onclick="deleteMaster('hotels','${h.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table></div>
+  </section>`).join('');
 }
 function filterHotelList(){
  const v=($('hotelFilter')?.value||'').toLowerCase(),dest=$('hotelDestinationFilter')?.value||'';
  const rows=cache.hotels.filter(h=>{
-  const d=String(h.destination||'').trim();
-  const matchesDest=!dest||(dest==='__unassigned'?!d:d===dest);
-  const matchesSearch=[h.name,h.destination,h.contact_person,h.contact,h.phone,h.email].join(' ').toLowerCase().includes(v);
+  const group=hotelDestinationGroup(h.destination);
+  const matchesDest=!dest||group===dest;
+  const matchesSearch=[h.name,h.destination,group,h.contact_person,h.contact,h.phone,h.email].join(' ').toLowerCase().includes(v);
   return matchesDest&&matchesSearch;
  });
  $('hotelTable').innerHTML=hotelTable(rows);
