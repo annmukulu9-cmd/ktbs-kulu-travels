@@ -1042,25 +1042,41 @@ function supplierTable(rows){
 }
 function filterSupplierList(){const v=($('supplierFilter')?.value||'').toLowerCase();$('supplierTable').innerHTML=supplierTable(cache.suppliers.filter(s=>[s.name,s.contact_person,s.contact,s.phone,s.email,s.type].join(' ').toLowerCase().includes(v)))}
 async function hotelsPage(){
-  const actions='<button class="primary" onclick="newHotel()">+ New Hotel</button><span class="muted">Shared hotel directory</span>';
-  $('content').innerHTML=`<div class="toolbar"><input id="hotelFilter" placeholder="Search hotels by name, destination or contact…" oninput="filterHotelList()">${actions}</div>${tableWrap('<div id="hotelTable" class="empty">Loading hotel records…</div>')}`;
+  const actions='<button class="primary" onclick="newHotel()">+ New Hotel</button><span class="muted">Hotels organized by destination</span>';
+  $('content').innerHTML=`<div class="toolbar"><input id="hotelFilter" placeholder="Search hotels by name, destination or contact…" oninput="filterHotelList()"><select id="hotelDestinationFilter" onchange="filterHotelList()"><option value="">All destinations</option></select>${actions}</div>${tableWrap('<div id="hotelTable" class="empty">Loading hotel records…</div>')}`;
   const target=$('hotelTable');
   const result=await sb.from('hotels').select('*').eq('organization_id',organization.id).order('name');
   if(!target)return;
-  if(result.error){
-    target.innerHTML='Unable to load hotel records: '+esc(result.error.message);
-    return;
-  }
+  if(result.error){target.innerHTML='Unable to load hotel records: '+esc(result.error.message);return;}
   cache.hotels=result.data||[];
+  const destinations=[...new Set(cache.hotels.map(h=>String(h.destination||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  $('hotelDestinationFilter').innerHTML='<option value="">All destinations</option>'+destinations.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('')+'<option value="__unassigned">No destination assigned</option>';
   target.innerHTML=hotelTable(cache.hotels);
-  const count=cache.hotels.length;
-  if(!count)target.innerHTML='No hotel records were returned for this workspace.';
+  if(!cache.hotels.length)target.innerHTML='No hotel records were returned for this workspace.';
 }
 function hotelTable(rows){
-  return rows.length?`<table><thead><tr><th>Hotel</th><th>Destination</th><th>Contact Person</th><th>Phone</th><th>Email</th><th></th></tr></thead><tbody>${rows.map(h=>`<tr><td><b>${esc(h.name)}</b></td><td>${esc(h.destination||'')}</td><td>${esc(h.contact_person||h.contact||'')}</td><td>${esc(h.phone||'')}</td><td>${esc(h.email||'')}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('hotels','${h.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No hotel records match your search.</div>';
+  if(!rows.length)return '<div class="empty">No hotel records match your search.</div>';
+  const groups={};
+  rows.forEach(h=>{const destination=String(h.destination||'').trim()||'No destination assigned';(groups[destination]||(groups[destination]=[])).push(h)});
+  return Object.entries(groups).sort(([a],[b])=>a.localeCompare(b)).map(([destination,hotels])=>`
+    <section class="hotel-destination-group" style="margin:0 0 22px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;margin-bottom:8px;background:linear-gradient(110deg,#eaf6f5,#f7fbfb);border:1px solid #d7e9e8;border-radius:10px">
+        <div><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#087e80;font-weight:800">DESTINATION</div><h3 style="margin:4px 0 0;color:#173c3d;font-size:17px">${esc(destination)}</h3></div>
+        <span class="badge info">${hotels.length} hotel${hotels.length===1?'':'s'}</span>
+      </div>
+      <div class="table-scroll"><table><thead><tr><th>Hotel</th><th>Contact Person</th><th>Phone</th><th>Email</th><th></th></tr></thead><tbody>${hotels.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''))).map(h=>`<tr><td><b>${esc(h.name)}</b></td><td>${esc(h.contact_person||h.contact||'')}</td><td>${esc(h.phone||'')}</td><td>${esc(h.email||'')}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('hotels','${h.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table></div>
+    </section>`).join('');
 }
-function filterHotelList(){const v=($('hotelFilter')?.value||'').toLowerCase();$('hotelTable').innerHTML=hotelTable(cache.hotels.filter(h=>[h.name,h.destination,h.contact_person,h.contact,h.phone,h.email].join(' ').toLowerCase().includes(v)))}
-
+function filterHotelList(){
+ const v=($('hotelFilter')?.value||'').toLowerCase(),dest=$('hotelDestinationFilter')?.value||'';
+ const rows=cache.hotels.filter(h=>{
+  const d=String(h.destination||'').trim();
+  const matchesDest=!dest||(dest==='__unassigned'?!d:d===dest);
+  const matchesSearch=[h.name,h.destination,h.contact_person,h.contact,h.phone,h.email].join(' ').toLowerCase().includes(v);
+  return matchesDest&&matchesSearch;
+ });
+ $('hotelTable').innerHTML=hotelTable(rows);
+}
 async function servicesPage(){
  const actions=isAdmin()?'<button class="primary" onclick="newService()">+ New Service / Travel Item</button>':'<span class="muted">Shared service directory · View only</span>';
  $('content').innerHTML=`<div class="toolbar">${actions}</div>${tableWrap('<div id="serviceTable" class="empty">Loading services…</div>')}`;
