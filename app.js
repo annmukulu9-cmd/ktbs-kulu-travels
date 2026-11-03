@@ -1835,7 +1835,7 @@ $('loginForm').onsubmit=async e=>{e.preventDefault();const message=$('loginMessa
 $('logout').onclick=async()=>{await sb.auth.signOut();location.reload()};
 $('globalSearch').oninput=e=>{const v=e.target.value.trim();if(!v)return;const c=cache.clients.filter(x=>Object.values(x).join(' ').toLowerCase().includes(v.toLowerCase()));if(c.length){go('clients');setTimeout(()=>{if($('clientFilter')){$('clientFilter').value=v;filterClient()}},0)}};
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.page));
-sb.auth.onAuthStateChange((_event,session)=>{if(session&&!me)enterApp(session.user)});
+// Auth bootstrap is handled by startApp() and the login form. Avoid duplicate enterApp() calls from auth events.
 startApp();
 
 
