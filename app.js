@@ -1756,3 +1756,36 @@ $('globalSearch').oninput=e=>{const v=e.target.value.trim();if(!v)return;const c
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.page));
 sb.auth.onAuthStateChange((_event,session)=>{if(session&&!me)enterApp(session.user)});
 startApp();
+
+
+/* KTBS itinerary builder preview module — workspace-local prototype data */
+function itineraryStoreKey(){return 'ktbs_itineraries_preview_'+String(organization?.id||'no-org');}
+function getItineraries(){try{return JSON.parse(localStorage.getItem(itineraryStoreKey())||'[]')}catch{return []}}
+function setItineraries(items){localStorage.setItem(itineraryStoreKey(),JSON.stringify(items))}
+function itinerariesPage(){
+ const items=getItineraries();
+ $('content').innerHTML=`
+ <div class="welcome"><div><div class="eyebrow">JOURNEY DESIGN STUDIO</div><h1>Itinerary Builder</h1><p>Create thoughtful day-by-day journeys with the details your travellers need.</p></div><button class="primary" onclick="newItinerary()">＋ Create itinerary</button></div>
+ <div class="grid stats">${stat('Saved itineraries',items.length,'This browser · current workspace')}${stat('Journey days',items.reduce((n,x)=>n+(x.days||[]).length,0),'Across your saved plans')}${stat('Ready to share',items.filter(x=>x.status==='Ready to share').length,'Marked client-ready')}</div>
+ <div class="page-card"><div class="section-head"><div><h3>Your journey collection</h3><p class="muted">A calm workspace for building client-ready travel plans.</p></div><span class="badge info">Preview feature</span></div>
+ ${items.length?'<div class="table-scroll"><table><thead><tr><th>Itinerary</th><th>Destination</th><th>Travel dates</th><th>Days</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+items.map(x=>`<tr><td><b>${esc(x.title)}</b></td><td>${esc(x.destination||'—')}</td><td>${esc(x.startDate||'—')} – ${esc(x.endDate||'—')}</td><td>${(x.days||[]).length}</td><td>${badge(x.status||'Draft')}</td><td><button class="secondary" onclick="editItinerary('${x.id}')">Open</button> <button class="secondary" onclick="deleteItinerary('${x.id}')">Delete</button></td></tr>`).join('')+'</tbody></table></div>':'<div class="empty-state" style="padding:42px;text-align:center"><div style="font-size:28px;color:#087e80">✧</div><h3>Your next journey starts here</h3><p>Create a day-by-day itinerary for a safari, island escape or tailor-made holiday.</p><button class="primary" onclick="newItinerary()">Create your first itinerary</button></div>'}
+ </div><p class="muted" style="font-size:12px;margin:12px 2px">Prototype note: itinerary drafts are saved in this browser for this workspace. Cloud sync and branded PDF/client sharing will follow after database integration.</p>`;
+}
+function newItinerary(){editItinerary(null)}
+function editItinerary(id){
+ const item=id?getItineraries().find(x=>x.id===id):null;
+ const x=item||{id:'it_'+Date.now(),title:'',destination:'',startDate:'',endDate:'',status:'Draft',days:[{title:'Arrival & welcome',date:'',description:'',hotel:'',meals:'',transport:'',activities:''}]};
+ const days=x.days||[];
+ openModal(item?'Edit itinerary':'Create itinerary',`
+ <form id="itineraryForm" style="display:grid;gap:14px">
+ <div class="grid two"><label>Itinerary title<input name="title" required maxlength="140" value="${esc(x.title)}" placeholder="e.g. Kenya Safari & Coast Escape"></label><label>Destination<input name="destination" value="${esc(x.destination)}" placeholder="Kenya · Maasai Mara · Diani"></label></div>
+ <div class="grid two"><label>Start date<input name="startDate" type="date" value="${esc(x.startDate)}"></label><label>End date<input name="endDate" type="date" value="${esc(x.endDate)}"></label></div>
+ <label>Client-ready status<select name="status"><option ${x.status==='Draft'?'selected':''}>Draft</option><option ${x.status==='Ready to share'?'selected':''}>Ready to share</option></select></label>
+ <div id="itineraryDays" style="display:grid;gap:12px">${days.map((d,i)=>itineraryDayForm(d,i)).join('')}</div>
+ <button type="button" class="secondary" onclick="addItineraryDay()">＋ Add a day</button>
+ <div style="display:flex;justify-content:flex-end;gap:8px"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary" type="submit">Save itinerary</button></div></form>`);
+ $('itineraryForm').onsubmit=e=>{e.preventDefault();const f=e.currentTarget;const days=[...f.querySelectorAll('.itinerary-day')].map(el=>({title:el.querySelector('[name=dayTitle]').value,date:el.querySelector('[name=dayDate]').value,description:el.querySelector('[name=dayDescription]').value,hotel:el.querySelector('[name=dayHotel]').value,meals:el.querySelector('[name=dayMeals]').value,transport:el.querySelector('[name=dayTransport]').value,activities:el.querySelector('[name=dayActivities]').value}));const saved={id:x.id,title:f.title.value.trim(),destination:f.destination.value.trim(),startDate:f.startDate.value,endDate:f.endDate.value,status:f.status.value,days,updatedAt:new Date().toISOString()};const all=getItineraries();const at=all.findIndex(a=>a.id===saved.id);if(at>=0)all[at]=saved;else all.unshift(saved);setItineraries(all);closeModal();itinerariesPage();};
+}
+function itineraryDayForm(d,i){return `<div class="itinerary-day" style="border:1px solid #e2eceb;border-radius:12px;padding:14px;background:#fbfdfc"><div class="section-head"><b style="color:#087e80">DAY ${i+1}</b><button type="button" class="link-btn" onclick="this.closest('.itinerary-day').remove()">Remove day</button></div><div class="grid two"><label>Day title<input name="dayTitle" value="${esc(d.title||'')}" placeholder="Safari drive, beach day…"></label><label>Date<input name="dayDate" type="date" value="${esc(d.date||'')}"></label></div><label>Overview & activities<textarea name="dayDescription" rows="2" placeholder="Describe the day and its highlights…">${esc(d.description||'')}</textarea></label><div class="grid two"><label>Accommodation<input name="dayHotel" value="${esc(d.hotel||'')}" placeholder="Hotel / lodge"></label><label>Meals<input name="dayMeals" value="${esc(d.meals||'')}" placeholder="Breakfast, lunch, dinner"></label><label>Transport<input name="dayTransport" value="${esc(d.transport||'')}" placeholder="Transfers, flight, vehicle"></label><label>Experiences<input name="dayActivities" value="${esc(d.activities||'')}" placeholder="Activities / excursions"></label></div></div>`}
+function addItineraryDay(){const root=$('itineraryDays');root.insertAdjacentHTML('beforeend',itineraryDayForm({title:'',date:'',description:'',hotel:'',meals:'',transport:'',activities:''},root.querySelectorAll('.itinerary-day').length))}
+function deleteItinerary(id){if(!confirm('Delete this itinerary draft?'))return;setItineraries(getItineraries().filter(x=>x.id!==id));itinerariesPage()}
