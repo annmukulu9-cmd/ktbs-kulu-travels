@@ -1711,6 +1711,8 @@ async function enterApp(user){
     return alert('Your organization workspace could not be loaded. Please contact your platform administrator.');
   }
   organization=orgRecord.data;
+  const brandingResult=await sb.from('organization_branding').select('logo_path,logo_url,primary_color,accent_color,background_color,welcome_message').eq('organization_id',organization.id).maybeSingle();
+  organizationBranding=brandingResult.error?null:brandingResult.data;
   await sb.rpc('refresh_current_subscription_status');
   const subscriptionResult=await sb.from('organization_subscriptions').select('plan_code,status,trial_started_at,trial_ends_at,current_period_ends_at').eq('organization_id',organization.id).maybeSingle();
   subscription=subscriptionResult.error?null:subscriptionResult.data;
