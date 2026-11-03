@@ -18,7 +18,7 @@
     registration?.classList.remove("hidden");
     window.scrollTo({top:0,behavior:"smooth"});
   };
-  document.querySelectorAll("[data-open-login]").forEach(button => button.addEventListener("click",showLogin));
+  document.querySelectorAll("[data-open-login]").forEach(button => button.addEventListener("click",event=>{event.preventDefault(); location.href="/login";}));
   document.querySelectorAll("[data-open-signup]").forEach(button => button.addEventListener("click",showSignup));
   const params = new URLSearchParams(location.search);
   const hash = new URLSearchParams(location.hash.slice(1));
