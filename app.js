@@ -53,6 +53,39 @@ function sumsForBooking(id){
  return {clientPaid:cp,supplierPaid:sp};
 }
 function financeForBooking(b){const s=sumsForBooking(b.id),selling=Number(b.selling_amount||0),cost=Number(b.supplier_cost||0),exp=Number(b.other_expenses||0);return {...s,selling,cost,exp,balance:selling-s.clientPaid,supplierPending:cost-s.supplierPaid,gross:selling-cost,net:selling-cost-exp}}
+async function groupTripsPage(){
+ $('content').innerHTML=`<div class="welcome"><div><h1>Group Trips & Departures</h1><p>Manage scheduled group tours, fixed departures, capacity and trip pricing.</p></div><button class="primary" onclick="newGroupTrip()">+ Create Group Trip</button></div><div class="toolbar"><input id="groupTripSearch" placeholder="Search trips or destinations…" oninput="filterGroupTrips()"><select id="groupTripStatus" onchange="filterGroupTrips()"><option value="">All statuses</option><option>Draft</option><option>Open</option><option>Full</option><option>Departed</option><option>Completed</option><option>Cancelled</option></select></div><div class="page-card"><div id="groupTripsTable" class="empty">Loading group trips…</div></div>`;
+ const target=$('groupTripsTable');
+ const {data,error}=await sb.from('group_trips').select('*').eq('organization_id',organization.id).order('departure_date',{ascending:true});
+ if(!target)return;
+ if(error){target.innerHTML='Unable to load trips: '+esc(error.message);return;}
+ cache.groupTrips=data||[];
+ target.innerHTML=groupTripsTable(cache.groupTrips);
+}
+function groupTripsTable(rows){
+ if(!rows.length)return '<div class="empty">No group trips yet. Create your first group departure.</div>';
+ return `<div class="table-scroll"><table><thead><tr><th>Trip / Departure</th><th>Destination</th><th>Dates</th><th>Capacity</th><th>Price per person</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(t=>`<tr><td><b>${esc(t.trip_name)}</b><div class="muted">${esc(t.meeting_point||'')}</div></td><td>${esc(t.destination)}</td><td>${esc(t.departure_date)}${t.return_date?' – '+esc(t.return_date):''}</td><td>${Number(t.capacity)||'—'} pax</td><td>${esc(t.currency||'KES')} ${Number(t.price_per_person||0).toLocaleString()}</td><td><span class="badge info">${esc(t.status)}</span></td><td>${isAdmin()?'<button class="link-btn" onclick="editGroupTrip(\''+t.id+'\')">Edit</button> <button class="link-btn" onclick="deleteGroupTrip(\''+t.id+'\')">Delete</button>':''}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function filterGroupTrips(){const term=($('groupTripSearch')?.value||'').toLowerCase(),status=$('groupTripStatus')?.value||'';groupTripsTable((cache.groupTrips||[]).filter(t=>(!status||t.status===status)&&[t.trip_name,t.destination,t.status].join(' ').toLowerCase().includes(term)).length?cache.groupTrips.filter(t=>(!status||t.status===status)&&[t.trip_name,t.destination,t.status].join(' ').toLowerCase().includes(term)):[])}
+function newGroupTrip(){editGroupTrip(null)}
+function editGroupTrip(id){
+ const t=(cache.groupTrips||[]).find(x=>x.id===id)||{};
+ openModal(id?'Edit Group Trip':'Create Group Trip',`<form id="groupTripForm"><div class="form-grid">
+ <label>Trip Name<input name="trip_name" required value="${esc(t.trip_name||'')}" placeholder="e.g. Maasai Mara Safari"></label>
+ <label>Destination<input name="destination" required value="${esc(t.destination||'')}" placeholder="Destination"></label>
+ <label>Departure Date<input type="date" name="departure_date" required value="${esc(t.departure_date||'')}"></label>
+ <label>Return Date<input type="date" name="return_date" value="${esc(t.return_date||'')}"></label>
+ <label>Trip Status<select name="status">${['Draft','Open','Full','Departed','Completed','Cancelled'].map(v=>'<option '+(t.status===v?'selected':'')+'>'+v+'</option>').join('')}</select></label>
+ <label>Capacity (travellers)<input type="number" min="0" name="capacity" value="${Number(t.capacity)||0}"></label>
+ <label>Price per person<input type="number" min="0" step="0.01" name="price_per_person" value="${Number(t.price_per_person)||0}"></label>
+ <label>Currency<select name="currency">${['KES','USD','EUR','GBP'].map(v=>'<option '+((t.currency||'KES')===v?'selected':'')+'>'+v+'</option>').join('')}</select></label>
+ <label class="wide">Meeting point<input name="meeting_point" value="${esc(t.meeting_point||'')}"></label>
+ <label class="wide">Inclusions<textarea name="inclusions">${esc(t.inclusions||'')}</textarea></label>
+ <label class="wide">Notes<textarea name="notes">${esc(t.notes||'')}</textarea></label></div><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Trip</button></div></form>`);
+ $('groupTripForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));f.organization_id=organization.id;f.created_by=me.id;f.capacity=+f.capacity||0;f.price_per_person=+f.price_per_person||0;f.return_date=f.return_date||null;f.updated_at=new Date().toISOString();const r=id?await sb.from('group_trips').update(f).eq('id',id).eq('organization_id',organization.id):await sb.from('group_trips').insert(f);if(r.error)return alert(r.error.message);closeModal();await groupTripsPage()};
+}
+async function deleteGroupTrip(id){if(!confirm('Delete this group trip?'))return;const r=await sb.from('group_trips').delete().eq('id',id).eq('organization_id',organization.id);if(r.error)return alert(r.error.message);await groupTripsPage()}
+
 function render(){
  document.querySelectorAll('#nav button').forEach(b=>{
    const restricted=['finance','reports','subscription'].includes(b.dataset.page);
