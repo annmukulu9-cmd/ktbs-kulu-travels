@@ -7,6 +7,10 @@ let cache={clients:[],quotations:[],quotation_items:[],bookings:[],suppliers:[],
 let teamStaffRows=[],teamAuditRows=[];
 
 const $=id=>document.getElementById(id);
+window.KTBSContext={
+ get sb(){return sb;},get me(){return me;},get profile(){return profile;},get organization(){return organization;},get cache(){return cache;},
+ isAdmin,get esc(){return esc;},get money(){return money;},stat,openModal,closeModal,refresh
+};
 const currencyLocale={KES:'en-KE',TZS:'en-TZ',UGX:'en-UG',USD:'en-US',EUR:'en-IE',GBP:'en-GB'};
 const money=n=>{const currency=organization?.currency||'KES';return currency+' '+Number(n||0).toLocaleString(currencyLocale[currency]||'en-KE');};
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -63,7 +67,7 @@ function render(){
    b.classList.toggle('active',b.dataset.page===page);
  });
  if(!isAdmin()&&['finance','reports'].includes(page))page='dashboard';
- $('pageTitle').textContent=page==='history'?'Travel History':page==='team'?'Team & Archive':page[0].toUpperCase()+page.slice(1);
+ $('pageTitle').textContent=page==='history'?'Travel History':page==='team'?'Team & Archive':page==='itineraries'?'Itinerary Builder':page==='tasks'?'Tasks':page==='calendar'?'Calendar':page[0].toUpperCase()+page.slice(1);
  const fn=window[page+'Page'];if(fn)fn();
 }
 

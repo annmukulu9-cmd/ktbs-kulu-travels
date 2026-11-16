@@ -4,6 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>KTBS — Kulu Travels Business System</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="planner.css">
 </head>
 <body>
 <div id="login" class="login-shell">
@@ -61,6 +62,9 @@
       <button data-page="suppliers">◇ <span>Suppliers</span></button>
       <button data-page="hotels">⌂ <span>Hotels</span></button>
       <button data-page="services">✦ <span>Services</span></button>
+      <button data-page="itineraries">▧ <span>Itinerary Builder</span></button>
+      <button data-page="tasks">✓ <span>Tasks</span></button>
+      <button data-page="calendar">▦ <span>Calendar</span></button>
       <button data-page="finance">▰ <span>Finance</span></button>
       <button data-page="history">↺ <span>Travel History</span></button>
       <button data-page="reports">▥ <span>Reports</span></button>
@@ -87,7 +91,8 @@
 <div id="modal" class="modal hidden"><div class="modal-card"><div class="modal-head"><h3 id="modalTitle"></h3><button onclick="closeModal()">×</button></div><div id="modalBody"></div></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
-<script src="app.js?v=20261116-team-archive-v1"></script>
+<script src="app.js?v=20261116-planner-v1"></script>
+<script src="planner.js?v=20261116-planner-v1"></script>
 <script src="signup.js?v=20261029-saas-trial"></script>
 </body>
 </html>

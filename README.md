@@ -142,3 +142,14 @@ The Vercel production URL is now publicly reachable for the registration screen;
 - Reassignment records the administrator as the latest updater without overwriting the original creator.
 - Consultant profiles are protected against permanent deletion; deactivate staff accounts instead.
 - Staff archive and reassignment actions are enforced by administrator-checked Supabase functions, not only by the browser interface.
+
+
+
+## Itinerary Builder, Tasks & Calendar (November 2026)
+
+- Added an organization-scoped Itinerary Builder with editable day-by-day plans, client and booking links, travel dates, draft/ready/shared/archive statuses, and multiple day entries.
+- Staff can upload JPG, PNG and WebP photos from their device to individual itinerary days (maximum 8 MB per image). Images are stored in a private, organization-scoped Supabase Storage bucket and served through short-lived signed URLs.
+- Added Tasks for client follow-ups, supplier and hotel confirmations, payment deadlines, travel documents, flights/transfers, visa/passport actions and post-travel follow-up. Tasks support assignees, due dates/times, priority, status and links to clients/bookings.
+- Added a monthly Calendar combining tasks, manually added operational events and booking departure dates. Calendar events can be edited; tasks can be updated and marked complete.
+- Access is enforced with organization-aware RLS: administrators manage the workspace; consultants see tasks assigned to them or related to their assigned clients, and can manage their own assigned tasks. Itineraries are available to administrators and consultants assigned to the linked client.
+- Automated email/WhatsApp reminders and printable itinerary exports are not part of this release.
