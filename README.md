@@ -131,3 +131,14 @@ KTBS is being evolved from a single-agency system into a subscription platform f
 The Vercel production URL is now publicly reachable for the registration screen; preview deployments remain SSO-protected.
 
 **Important:** Trial infrastructure and the registration entry point have been added, but this is not yet a fully validated public launch. Paid subscription checkout, the platform super-admin console and end-to-end registration tests remain outstanding. Do not advertise paid subscriptions as available until these checks are complete.
+
+
+## Admin Team & Consultant Archive (November 2026)
+
+- Added an administrator-only Team & Archive workspace page.
+- Lists active and deactivated staff with profile and organization-membership status.
+- Provides a searchable audit archive of hotels, suppliers, services, clients, quotations, bookings, client payments, supplier payments and expenses.
+- Retains the original record creator while allowing administrators to reassign a client's entire portfolio (client, linked quotations and bookings) to an active consultant.
+- Reassignment records the administrator as the latest updater without overwriting the original creator.
+- Consultant profiles are protected against permanent deletion; deactivate staff accounts instead.
+- Staff archive and reassignment actions are enforced by administrator-checked Supabase functions, not only by the browser interface.
