@@ -43,6 +43,7 @@
   const input = form.querySelector("textarea");
   const status = panel.querySelector(".kulu-ai-status");
   const history = [];
+  const aiClient = window.supabase.createClient(window.KTBS_SUPABASE_URL, window.KTBS_SUPABASE_ANON_KEY);
 
   function addMessage(role, content) {
     const item = document.createElement("div");
@@ -52,7 +53,8 @@
     messages.scrollTop = messages.scrollHeight;
   }
   function syncVisibility() {
-    const signedIn = !!(window.sb && window.me && window.organization);
+    const app = document.getElementById("app");
+    const signedIn = !!(app && !app.classList.contains("hidden"));
     launch.hidden = !signedIn;
     if (!signedIn) panel.hidden = true;
   }
@@ -67,7 +69,7 @@
     status.textContent = "Kulu AI is thinking…";
     form.querySelector("button").disabled = true;
     try {
-      const { data, error } = await window.sb.functions.invoke("kulu-ai-concierge", {
+      const { data, error } = await aiClient.functions.invoke("kulu-ai-concierge", {
         body: { message, history: history.slice(-8) }
       });
       if (error) throw error;
