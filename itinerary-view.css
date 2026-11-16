@@ -43,3 +43,70 @@
 .ktbs-itinerary-footer p{font-size:12px;color:#c3dedb;margin:0}
 @media(max-width:700px){.ktbs-itinerary-view{padding:10px}.ktbs-itinerary-toolbar{align-items:stretch;flex-direction:column}.ktbs-itinerary-toolbar>div{justify-content:flex-end}.ktbs-itinerary-cover{min-height:360px;padding:24px}.ktbs-itinerary-intro{padding:35px 25px;grid-template-columns:1fr;gap:18px}.ktbs-itinerary-intro>.ktbs-itinerary-kicker{grid-column:auto}.ktbs-itinerary-days{padding:36px 25px}.ktbs-itinerary-day{grid-template-columns:1fr;gap:12px}.ktbs-day-label{flex-direction:row;align-items:center}.ktbs-itinerary-stop{grid-template-columns:86px 1fr}.ktbs-day-gallery img{height:160px}}
 @media print{@page{size:A4;margin:0}.ktbs-itinerary-view{position:static;overflow:visible;background:#fff;padding:0}.ktbs-itinerary-toolbar{display:none!important}.ktbs-itinerary-document{max-width:none;box-shadow:none}.ktbs-itinerary-cover{min-height:275mm;print-color-adjust:exact;-webkit-print-color-adjust:exact}.ktbs-itinerary-intro,.ktbs-itinerary-days,.ktbs-itinerary-footer{print-color-adjust:exact;-webkit-print-color-adjust:exact}.ktbs-itinerary-day{break-inside:avoid}.ktbs-day-gallery img{break-inside:avoid}}
+
+
+/* Clean A4 export: print the itinerary document only, never the KTBS application shell. */
+@media print {
+  @page { size: A4 portrait; margin: 0; }
+  html, body { width: 210mm !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }
+  body > *:not(.ktbs-itinerary-view) { display: none !important; }
+  body > .ktbs-itinerary-view {
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    width: 210mm !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #203337 !important;
+  }
+  .ktbs-itinerary-toolbar { display: none !important; }
+  .ktbs-itinerary-document { display: block !important; width: 210mm !important; max-width: none !important; margin: 0 !important; box-shadow: none !important; }
+  .ktbs-itinerary-cover {
+    box-sizing: border-box !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    padding: 22mm 18mm !important;
+    break-after: page !important;
+    page-break-after: always !important;
+    background-size: cover !important;
+    background-position: center center !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+  .ktbs-itinerary-intro {
+    box-sizing: border-box !important;
+    padding: 22mm 18mm 16mm !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+  .ktbs-itinerary-days {
+    box-sizing: border-box !important;
+    padding: 14mm 18mm 18mm !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+  .ktbs-itinerary-section-head { break-after: avoid-page !important; page-break-after: avoid !important; }
+  .ktbs-itinerary-day {
+    break-inside: avoid-page !important;
+    page-break-inside: avoid !important;
+    padding: 10mm 0 !important;
+  }
+  .ktbs-day-gallery { break-inside: avoid !important; page-break-inside: avoid !important; }
+  .ktbs-day-gallery img { max-height: 58mm !important; object-fit: cover !important; break-inside: avoid !important; page-break-inside: avoid !important; }
+  .ktbs-itinerary-footer {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    padding: 18mm 12mm !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+  img { print-color-adjust: exact !important; -webkit-print-color-adjust: exact !important; }
+}
