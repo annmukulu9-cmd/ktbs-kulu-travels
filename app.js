@@ -9,7 +9,7 @@ let teamStaffRows=[],teamAuditRows=[];
 const $=id=>document.getElementById(id);
 window.KTBSContext={
  get sb(){return sb;},get me(){return me;},get profile(){return profile;},get organization(){return organization;},get cache(){return cache;},
- isAdmin,get esc(){return esc;},get money(){return money;},stat,openModal,closeModal,refresh
+ get isAdmin(){return isAdmin();},get esc(){return esc;},get money(){return money;},stat,openModal,closeModal,refresh
 };
 const currencyLocale={KES:'en-KE',TZS:'en-TZ',UGX:'en-UG',USD:'en-US',EUR:'en-IE',GBP:'en-GB'};
 const money=n=>{const currency=organization?.currency||'KES';return currency+' '+Number(n||0).toLocaleString(currencyLocale[currency]||'en-KE');};
