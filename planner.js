@@ -41,9 +41,40 @@
   function renderItineraryList(rows){
     if(!rows.length)return empty('No itineraries yet. Create your first itinerary to start planning a journey.');
     return '<div class="table-scroll"><table class="planner-table"><thead><tr><th>Itinerary</th><th>Client</th><th>Destination</th><th>Travel dates</th><th>Days</th><th>Status</th><th>Action</th></tr></thead><tbody>'+
-    rows.map(x=>'<tr><td><b>'+esc(x.title)+'</b></td><td>'+esc((C().cache?.clients||[]).find(c=>c.id===x.client_id)?.name||'—')+'</td><td>'+esc(x.destination||'—')+'</td><td>'+dateLabel(x.start_date)+' – '+dateLabel(x.end_date)+'</td><td>'+((x.days||[]).length)+'</td><td>'+esc(x.status)+'</td><td><button class="link-btn" onclick="openItineraryEditor(\''+x.id+'\')">Edit</button></td></tr>').join('')+
+    rows.map(x=>'<tr><td><b>'+esc(x.title)+'</b></td><td>'+esc((C().cache?.clients||[]).find(c=>c.id===x.client_id)?.name||'—')+'</td><td>'+esc(x.destination||'—')+'</td><td>'+dateLabel(x.start_date)+' – '+dateLabel(x.end_date)+'</td><td>'+((x.days||[]).length)+'</td><td>'+esc(x.status)+'</td><td><button class="link-btn" onclick="openItineraryEditor(\''+x.id+'\')">Edit</button> <button class="link-btn" data-id="'+x.id+'" onclick="exportItineraryPdf(this.dataset.id)">Save PDF</button></td></tr>').join('')+
     '</tbody></table></div>';
   }
+  window.exportItineraryPdf=async function(id){
+    const win=window.open('about:blank','_blank');
+    if(!win)return alert('Please allow pop-ups for KTBS to create the itinerary PDF.');
+    win.document.open();
+    win.document.write('<!doctype html><html><head><title>Preparing itinerary PDF</title></head><body style="font:16px Arial;padding:32px">Preparing your itinerary PDF…</body></html>');
+    win.document.close();
+    try{
+      const r=await C().sb.from('itineraries').select('*').eq('id',id).single();
+      if(r.error)throw r.error;
+      const item=r.data,days=Array.isArray(r.data.days)?r.data.days:[];
+      const client=(C().cache?.clients||[]).find(x=>x.id===item.client_id);
+      const booking=(C().cache?.bookings||[]).find(x=>x.id===item.booking_id);
+      const imageUrls={};
+      for(const day of days)for(const path of (Array.isArray(day.images)?day.images:[])){
+        const signed=await C().sb.storage.from('itinerary-images').createSignedUrl(path,3600);
+        if(!signed.error&&signed.data?.signedUrl)imageUrls[path]=signed.data.signedUrl;
+      }
+      const safe=v=>esc(v).replace(/\n/g,'<br>');
+      const range=(item.start_date||item.end_date)?dateLabel(item.start_date)+' – '+dateLabel(item.end_date):'';
+      const dayHtml=days.map((day,index)=>{
+        const photos=(day.images||[]).filter(path=>imageUrls[path]).map(path=>'<img class="day-photo" src="'+imageUrls[path]+'" alt="Itinerary photo">').join('');
+        return '<section class="day"><div class="day-kicker">DAY '+(index+1)+'</div><h2>'+safe(day.title||('Day '+(index+1)))+'</h2>'+(day.date?'<div class="day-date">'+dateLabel(day.date)+'</div>':'')+(day.description?'<p class="overview">'+safe(day.description)+'</p>':'')+(day.activities?'<div class="activities">'+safe(day.activities)+'</div>':'')+(photos?'<div class="photos">'+photos+'</div>':'')+'</section>';
+      }).join('');
+      const html='<!doctype html><html><head><meta charset="utf-8"><title>'+safe(item.title||'Travel Itinerary')+'</title><style>'+
+        '@page{size:A4;margin:16mm 15mm 18mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#203536;margin:0;font-size:11pt;line-height:1.55}header{border-bottom:3px solid #18b9c3;padding:0 0 16px;margin-bottom:22px}.brand{font-size:10pt;letter-spacing:3px;color:#078b91;font-weight:700;text-transform:uppercase}h1{font-family:Georgia,serif;font-size:27pt;line-height:1.15;margin:10px 0 8px;color:#153b3d}.meta{color:#587071;font-size:10pt}.intro{font-size:11pt;margin:20px 0 24px;white-space:normal}.summary{display:flex;flex-wrap:wrap;gap:8px 24px;background:#f0f8f7;padding:13px 15px;border-radius:8px;margin-top:18px}.summary span{display:block;font-size:9pt;color:#466}.day{break-inside:avoid-page;border-top:1px solid #cbdcda;padding:18px 0 14px;margin-top:12px}.day-kicker{font-size:9pt;letter-spacing:2px;color:#078b91;font-weight:bold}.day h2{font:19pt Georgia,serif;margin:3px 0;color:#183f40}.day-date{font-size:9pt;color:#607778;margin-bottom:8px}.overview{font-weight:600}.activities{white-space:pre-wrap}.photos{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.day-photo{width:calc(50% - 5px);max-height:230px;object-fit:cover;border-radius:6px;break-inside:avoid}.actions{position:sticky;top:0;background:#fff;padding:10px 0;text-align:right;border-bottom:1px solid #ddd;margin-bottom:12px}@media print{.actions{display:none}.day{break-inside:avoid-page}a{color:inherit;text-decoration:none}}'+
+        '</style></head><body><div class="actions"><button onclick="window.print()">Print / Save as PDF</button></div><header><div class="brand">KULU TRAVELS · SEAMLESS TRAVEL</div><h1>'+safe(item.title||'Travel Itinerary')+'</h1><div class="meta">'+safe(item.destination||'')+(range?' · '+safe(range):'')+'</div><div class="summary">'+(client?'<span><b>Prepared for</b><br>'+safe(client.name)+'</span>':'')+(booking?'<span><b>Booking reference</b><br>'+safe(booking.booking_no)+'</span>':'')+'<span><b>Itinerary status</b><br>'+safe(item.status||'Draft')+'</span></div></header>'+(item.introduction?'<div class="intro">'+safe(item.introduction)+'</div>':'')+dayHtml+'</body></html>';
+      win.document.open();win.document.write(html);win.document.close();
+      await Promise.all(Array.from(win.document.images).map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;})));
+      win.focus();
+    }catch(e){win.document.body.innerHTML='<p style="font:16px Arial;color:#a00;padding:24px">Could not prepare PDF: '+esc(e.message)+'</p>';}
+  };
   function filterItineraries(rows){
     const q=($('itinerarySearch')?.value||'').toLowerCase(),s=$('itineraryStatus')?.value||'';
     $('itineraryList').innerHTML=renderItineraryList(rows.filter(x=>(!s||x.status===s)&&[x.title,x.destination,(C().cache?.clients||[]).find(c=>c.id===x.client_id)?.name].join(' ').toLowerCase().includes(q)));
