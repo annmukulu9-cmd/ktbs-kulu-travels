@@ -675,3 +675,13 @@ table{
 .table-scroll table{min-width:920px;width:100%}
 .table-scroll select,.table-scroll input[type=date]{min-width:130px;max-width:170px;padding:8px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--text);font:inherit;font-size:12px}
 #nav button[data-page="platform-admin"]{color:#0b7f89}
+
+
+/* Team management and consultant archive */
+.team-filterbar{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px}
+.team-filterbar input{flex:1;min-width:220px}
+.team-filterbar select{min-width:170px}
+.team-table{min-width:900px;width:100%}
+.team-table td{vertical-align:middle}
+.team-table small{color:var(--muted);font-size:10px}
+@media(max-width:700px){.team-filterbar{display:grid;grid-template-columns:1fr}.team-filterbar input,.team-filterbar select{width:100%;min-width:0}}

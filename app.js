@@ -4,6 +4,7 @@ const sb = createClient(window.KTBS_SUPABASE_URL, window.KTBS_SUPABASE_ANON_KEY)
 const STATUS=['New Enquiry','Quotation','Confirmed','Partially Paid','Fully Paid','In Progress','COMPLETED','Cancelled'];
 let page='dashboard', me=null, profile=null, organization=null, subscription=null, platformAdmin=false;
 let cache={clients:[],quotations:[],quotation_items:[],bookings:[],suppliers:[],hotels:[],services:[],history:[],expenses:[],payments:[],supplierPayments:[],profiles:[]};
+let teamStaffRows=[],teamAuditRows=[];
 
 const $=id=>document.getElementById(id);
 const currencyLocale={KES:'en-KE',TZS:'en-TZ',UGX:'en-UG',USD:'en-US',EUR:'en-IE',GBP:'en-GB'};
@@ -57,11 +58,12 @@ function render(){
  document.querySelectorAll('#nav button').forEach(b=>{
    const restricted=['finance','reports'].includes(b.dataset.page);
    if(b.dataset.page==='platform-admin')b.classList.toggle('hidden',!platformAdmin);
+   else if(b.dataset.page==='team')b.classList.toggle('hidden',!isAdmin());
    else b.classList.toggle('hidden',restricted&&!isAdmin());
    b.classList.toggle('active',b.dataset.page===page);
  });
  if(!isAdmin()&&['finance','reports'].includes(page))page='dashboard';
- $('pageTitle').textContent=page==='history'?'Travel History':page[0].toUpperCase()+page.slice(1);
+ $('pageTitle').textContent=page==='history'?'Travel History':page==='team'?'Team & Archive':page[0].toUpperCase()+page.slice(1);
  const fn=window[page+'Page'];if(fn)fn();
 }
 
@@ -1448,6 +1450,51 @@ function reportsPage(){
     `)}
   `;
 }
+async function teamPage(){
+ if(!isAdmin()){go('dashboard');return;}
+ $('content').innerHTML='<div class="page-card"><p>Loading staff and archived records…</p></div>';
+ const [staffResult,auditResult]=await Promise.all([
+  sb.rpc('admin_list_workspace_staff'),
+  sb.from('admin_consultant_record_audit').select('*').eq('organization_id',organization.id).order('created_at',{ascending:false}).limit(1000)
+ ]);
+ if(staffResult.error){$('content').innerHTML='<div class="page-card"><h3>Staff records unavailable</h3><p>'+esc(staffResult.error.message)+'</p></div>';return;}
+ if(auditResult.error){$('content').innerHTML='<div class="page-card"><h3>Archived records unavailable</h3><p>'+esc(auditResult.error.message)+'</p></div>';return;}
+ teamStaffRows=staffResult.data||[];teamAuditRows=auditResult.data||[];
+ const active=teamStaffRows.filter(x=>x.profile_active&&x.membership_active).length;
+ const archived=teamStaffRows.filter(x=>!x.profile_active||!x.membership_active).length;
+ $('content').innerHTML=`
+  <div class="welcome"><div><h1>Team & Record Archive</h1><p>Manage staff access, preserve ownership history and reassign client portfolios.</p></div><button class="secondary" onclick="teamPage()">Refresh</button></div>
+  <div class="grid stats">${stat('Active Staff',active,'Current workspace access')}${stat('Archived Staff',archived,'Inactive accounts retained')}${stat('Archived / Tracked Records',teamAuditRows.length,'Creator and assignment history')}${stat('Shared Master Records',teamAuditRows.filter(x=>['hotel','supplier','service'].includes(x.record_type)).length,'Hotels, suppliers and services')}</div>
+  <div class="page-card"><div class="section-head"><div><h3>Staff Accounts</h3><p class="muted">Deactivated accounts remain visible here. Their original records are not deleted.</p></div><span class="badge info">Administrator only</span></div>
+   <div class="table-scroll"><table class="team-table"><thead><tr><th>Staff member</th><th>Role</th><th>Profile</th><th>Workspace membership</th><th>Actions</th></tr></thead><tbody>
+    ${teamStaffRows.map(x=>`<tr><td><b>${esc(x.full_name||'Name not set')}</b>${x.user_id===me?.id?'<br><small>Current user</small>':''}<br><small>${esc(String(x.user_id).slice(0,8))}…</small></td><td>${badge(String(x.role||'consultant').toUpperCase())}</td><td>${x.profile_active?'<span class="badge info">ACTIVE</span>':'<span class="badge red">INACTIVE</span>'}</td><td>${x.membership_active?'<span class="badge info">ACTIVE</span>':'<span class="badge red">INACTIVE</span>'}</td><td><div class="actions"><button class="link-btn" onclick="editStaffName('${x.user_id}')">Edit name</button>${x.user_id!==me?.id?`<button class="link-btn" onclick="changeRole('${x.user_id}','${x.role==='admin'?'consultant':'admin'}')">Make ${x.role==='admin'?'Consultant':'Admin'}</button><button class="link-btn" onclick="toggleStaffStatus('${x.user_id}',${!!x.profile_active})">${x.profile_active?'Deactivate':'Reactivate'}</button>`:''}</div></td></tr>`).join('')||'<tr><td colspan="5">No staff accounts found.</td></tr>'}
+   </tbody></table></div>
+   <p class="muted" style="margin-top:12px">New login accounts are created in Supabase Authentication, then assigned a KTBS profile and workspace membership.</p>
+  </div>
+  <div class="page-card"><div class="section-head"><div><h3>Consultant Records Archive</h3><p class="muted">Search every record by creator, type or assigned consultant. Original creator details are retained after deactivation.</p></div><span class="badge info">${teamAuditRows.length} records</span></div>
+   <div class="team-filterbar"><input id="teamSearch" placeholder="Search record, client, hotel or booking…" oninput="filterTeamArchive()"><select id="teamTypeFilter" onchange="filterTeamArchive()"><option value="">All record types</option>${[...new Set(teamAuditRows.map(x=>x.record_type))].sort().map(x=>`<option value="${esc(x)}">${esc(x.replaceAll('_',' '))}</option>`).join('')}</select><select id="teamCreatorFilter" onchange="filterTeamArchive()"><option value="">All creators</option>${teamStaffRows.map(x=>`<option value="${x.user_id}">${esc(x.full_name||'Name not set')}</option>`).join('')}</select></div>
+   <div id="teamArchiveTable" class="table-scroll">${teamArchiveTable(teamAuditRows)}</div>
+  </div>`;
+}
+function teamArchiveTable(rows){
+ if(!rows.length)return '<div class="empty">No records match these filters.</div>';
+ const staff=id=>teamStaffRows.find(x=>x.user_id===id)?.full_name||'Former / unknown staff';
+ return `<table class="team-table"><thead><tr><th>Created</th><th>Type</th><th>Record</th><th>Created by</th><th>Assigned consultant</th><th>Status</th><th>Action</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${x.created_at?new Date(x.created_at).toLocaleDateString('en-GB'):'—'}</td><td>${esc(String(x.record_type||'').replaceAll('_',' '))}</td><td><b>${esc(x.record_label||'—')}</b><br><small>${esc(String(x.record_id).slice(0,8))}…</small></td><td>${esc(staff(x.created_by))}</td><td>${x.assigned_consultant_id?esc(staff(x.assigned_consultant_id)):'—'}</td><td>${badge(x.record_status||'—')}</td><td>${x.record_type==='client'?`<button class="link-btn" onclick="openPortfolioReassignment('${x.record_id}')">Reassign portfolio</button>`:'—'}</td></tr>`).join('')}</tbody></table>`;
+}
+function filterTeamArchive(){
+ const term=($('teamSearch')?.value||'').trim().toLowerCase(),type=$('teamTypeFilter')?.value||'',creator=$('teamCreatorFilter')?.value||'';
+ const rows=teamAuditRows.filter(x=>(!type||x.record_type===type)&&(!creator||x.created_by===creator)&&(!term||[x.record_label,x.record_type,x.record_status,teamStaffRows.find(s=>s.user_id===x.created_by)?.full_name,teamStaffRows.find(s=>s.user_id===x.assigned_consultant_id)?.full_name].join(' ').toLowerCase().includes(term)));
+ $('teamArchiveTable').innerHTML=teamArchiveTable(rows);
+}
+function openPortfolioReassignment(clientId){
+ if(!isAdmin())return;
+ const row=teamAuditRows.find(x=>x.record_type==='client'&&x.record_id===clientId);
+ if(!row)return alert('Client record not found in the archive.');
+ const consultants=teamStaffRows.filter(x=>x.profile_active&&x.membership_active&&x.role==='consultant');
+ if(!consultants.length)return alert('There are no active consultants available. Activate or add a consultant first.');
+ openModal('Reassign Client Portfolio',`<p>Reassign <b>${esc(row.record_label||'this client')}</b> and all linked quotations and bookings. Original Created By details will remain unchanged.</p><form id="portfolioReassignForm"><label>New Consultant<select name="consultant_id" required>${consultants.map(x=>`<option value="${x.user_id}">${esc(x.full_name||'Name not set')}</option>`).join('')}</select></label><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Reassign Portfolio</button></div></form>`);
+ $('portfolioReassignForm').onsubmit=async e=>{e.preventDefault();const consultantId=new FormData(e.target).get('consultant_id');if(!confirm('Reassign this client and all linked quotations and bookings?'))return;const {data,error}=await sb.rpc('admin_reassign_client_portfolio',{p_client_id:clientId,p_new_consultant_id:consultantId});if(error)return alert('Portfolio reassignment failed: '+error.message);await refresh();closeModal();await teamPage();alert(`Portfolio reassigned. Quotations: ${data.quotations_reassigned}; Bookings: ${data.bookings_reassigned}. Original creator history was preserved.`)};
+}
 function settingsPage(){$('content').innerHTML=`<div class="page-grid"><div class="page-card"><h3>Current User</h3><p><b>${esc(profile?.full_name||'')}</b><br>${esc(me?.email||'')}<br>${badge(profile?.role?.toUpperCase())}</p></div><div class="page-card"><h3>Permissions</h3><p>
   Consultants can create clients, quotations and operational records.
   Saved client and quotation records are protected from consultant
@@ -1458,7 +1505,7 @@ function settingsPage(){$('content').innerHTML=`<div class="page-grid"><div clas
 <p>
   Administrators have full management access, including staff accounts,
   master data, client records and quotation records.
-</p></div><div class="page-card"><h3>Staff Accounts</h3><p>Login accounts are managed by Supabase Authentication. KTBS profiles store staff roles.</p>${isAdmin()?`<button class="primary" onclick="showStaff()">View Staff & Roles</button>`:'<p>Admin only.</p>'}</div></div>`}
+</p></div><div class="page-card"><h3>Staff Accounts</h3><p>Login accounts are managed by Supabase Authentication. KTBS profiles store staff roles.</p>${isAdmin()?`<button class="primary" onclick="go('team')">Open Team & Archive</button> <button class="secondary" onclick="showStaff()">Quick Staff View</button>`:'<p>Admin only.</p>'}</div></div>`}
  async function showStaff(){
   const rows=Array.isArray(cache.profiles)?cache.profiles:[];
 
@@ -1569,7 +1616,7 @@ function settingsPage(){$('content').innerHTML=`<div class="page-grid"><div clas
 async function editStaffName(id){
   if(!isAdmin())return;
 
-  const staff=cache.profiles.find(x=>x.id===id);
+  const staff=cache.profiles.find(x=>x.id===id)||teamStaffRows.find(x=>x.user_id===id);
   if(!staff)return alert('Staff profile not found.');
 
   openModal('Edit Staff Name',`
@@ -1596,7 +1643,7 @@ async function editStaffName(id){
 
     await refresh();
     closeModal();
-    showStaff();
+    if(page==='team')await teamPage();else showStaff();
   };
 }
 
@@ -1623,9 +1670,9 @@ async function toggleStaffStatus(id,current){
   if(r.error)return alert(r.error.message);
 
   await refresh();
-  showStaff();
+  if(page==='team')await teamPage();else showStaff();
 }
-async function changeRole(id,role){if(!isAdmin())return;const r=await sb.from('profiles').update({role}).eq('id',id);if(r.error)return alert(r.error.message);await refresh();showStaff()}
+async function changeRole(id,role){if(!isAdmin())return;const r=await sb.from('profiles').update({role}).eq('id',id);if(r.error)return alert(r.error.message);await refresh();if(page==='team')await teamPage();else showStaff()}
 
 async function startApp(){if(!window.KTBS_SUPABASE_URL||window.KTBS_SUPABASE_URL.includes('PASTE_')){$('loginMessage').textContent='Supabase connection is not configured.';return}const {data:{session}}=await sb.auth.getSession();if(session)await enterApp(session.user)}
 async function enterApp(user){
