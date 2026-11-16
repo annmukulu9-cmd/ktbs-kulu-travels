@@ -72,7 +72,7 @@
     if(id){
       const r=await C().sb.from('itineraries').select('*').eq('id',id).single();
       if(r.error)return alert(r.error.message);
-      draft={...r.data,days:Array.isArray(r.data.days)?r.data.days:[]};
+      draft={...r.data,days:Array.isArray(r.data.days)?r.data.days.map(day=>({...day,images:Array.isArray(day.images)?day.images:[]})):[]};
     }else draft={id:uid(),title:'',client_id:'',booking_id:'',destination:'',start_date:'',end_date:'',status:'Draft',introduction:'',days:[freshDay(0)]};
     window.ktbsItineraryDraft=draft;
     window.ktbsItineraryOriginalImages=new Set(draft.days.flatMap(x=>x.images||[]));
