@@ -75,7 +75,8 @@
       draft={...r.data,days:Array.isArray(r.data.days)?r.data.days:[]};
     }else draft={id:uid(),title:'',client_id:'',booking_id:'',destination:'',start_date:'',end_date:'',status:'Draft',introduction:'',days:[freshDay(0)]};
     window.ktbsItineraryDraft=draft;
-    const staffClients=C().cache?.clients||[];
+    window.ktbsItineraryOriginalImages=new Set(draft.days.flatMap(x=>x.images||[]));
+    window.ktbsItineraryNewUploads=[];
     C().openModal('Build Itinerary','<form id="itineraryForm"><div class="form-grid">'+
       '<label class="wide">Itinerary title<input name="title" required maxlength="180" value="'+esc(draft.title)+'" placeholder="e.g. 5-Day Maasai Mara Luxury Safari"></label>'+
       '<label>Client<select name="client_id" '+(!admin()?'required':'')+'>'+clientOptions(draft.client_id)+'</select></label>'+
@@ -86,7 +87,7 @@
       '<label>End date<input name="end_date" type="date" value="'+esc(draft.end_date||'')+'"></label>'+
       '<label class="wide">Introduction<textarea name="introduction" rows="2" placeholder="A warm introduction to the journey">'+esc(draft.introduction||'')+'</textarea></label></div>'+
       '<div class="section-head itinerary-days-title"><h3>Daily itinerary</h3><button type="button" class="secondary" onclick="addItineraryDay()">＋ Add day</button></div>'+
-      '<div id="itineraryDays">'+renderDays(draft)+'</div><div class="actions"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Save Itinerary</button></div></form>');
+      '<div id="itineraryDays">'+renderDays(draft)+'</div><div class="actions"><button type="button" class="secondary" onclick="cancelItineraryEditor()">Cancel</button><button class="primary">Save Itinerary</button></div></form>');
     $('itineraryForm').elements.client_id.onchange=e=>{$('itineraryForm').elements.booking_id.innerHTML=bookingOptions(e.target.value,'');};
     $('itineraryForm').oninput=e=>{
       const d=window.ktbsItineraryDraft;if(!d)return;
@@ -109,10 +110,13 @@
     if(d.days.length===1)return alert('An itinerary must contain at least one day.');
     d.days=d.days.filter(x=>x.id!==id);$('itineraryDays').innerHTML=renderDays(d);signItineraryImages(d);
   };
-  window.removeItineraryImage=async function(dayId,index){
+  window.removeItineraryImage=function(dayId,index){
     const d=window.ktbsItineraryDraft?.days.find(x=>x.id===dayId);if(!d)return;
-    const path=d.images[index];if(path){const r=await C().sb.storage.from('itinerary-images').remove([path]);if(r.error)return alert(r.error.message);}
     d.images.splice(index,1);$('itineraryDays').innerHTML=renderDays(window.ktbsItineraryDraft);signItineraryImages(window.ktbsItineraryDraft);
+  };
+  window.cancelItineraryEditor=async function(){
+    const added=window.ktbsItineraryNewUploads||[];if(added.length)await C().sb.storage.from('itinerary-images').remove(added);
+    window.ktbsItineraryDraft=null;window.ktbsItineraryNewUploads=[];C().closeModal();
   };
   function syncItineraryDates(){
     const f=$('itineraryForm');if(!f)return;
@@ -129,7 +133,7 @@
       const path=org().id+'/'+user().id+'/'+window.ktbsItineraryDraft.id+'/'+dayId+'/'+uid()+'-'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
       const r=await C().sb.storage.from('itinerary-images').upload(path,file,{contentType:file.type,upsert:false});
       if(r.error){alert('Could not upload '+file.name+': '+r.error.message);continue;}
-      d.images.push(path);
+      d.images.push(path);window.ktbsItineraryNewUploads.push(path);
     }
     $('itineraryDays').innerHTML=renderDays(window.ktbsItineraryDraft);await signItineraryImages(window.ktbsItineraryDraft);
   }
@@ -142,7 +146,10 @@
     if(d.created_at)r=await C().sb.from('itineraries').update(payload).eq('id',d.id);
     else r=await C().sb.from('itineraries').insert({...payload,id:d.id,created_by:user().id});
     if(r.error)return alert('Could not save itinerary: '+r.error.message);
-    C().closeModal();await window.itinerariesPage();
+    const current=new Set(d.days.flatMap(day=>day.images||[]));
+    const removed=[...(window.ktbsItineraryOriginalImages||[])].filter(path=>!current.has(path));
+    if(removed.length){const cleanup=await C().sb.storage.from('itinerary-images').remove(removed);if(cleanup.error)console.warn('Some removed itinerary images could not be deleted:',cleanup.error.message);}
+    window.ktbsItineraryDraft=null;window.ktbsItineraryNewUploads=[];C().closeModal();await window.itinerariesPage();
   }
 
   async function loadTasks(){
