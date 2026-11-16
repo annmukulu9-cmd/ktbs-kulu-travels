@@ -16,7 +16,7 @@
     let rows=[];
     if(admin()){
       const r=await C().sb.rpc('admin_list_workspace_staff');
-      if(!r.error)rows=(r.data||[]).filter(x=>x.active!==false && x.membership_active!==false);
+      if(!r.error){rows=(r.data||[]).filter(x=>x.active!==false && x.membership_active!==false);C().cache.profiles=rows.map(x=>({id:x.user_id||x.id,full_name:x.full_name,role:x.role,active:x.active}));}
     }else rows=[{user_id:user().id,full_name:C().profile?.full_name||'Me',active:true}];
     return rows.map(x=>{const id=x.user_id||x.id;return '<option value="'+id+'" '+(id===selected?'selected':'')+'>'+esc(x.full_name||'Staff member')+'</option>';}).join('');
   }
@@ -55,7 +55,7 @@
   function renderDays(draft){
     return draft.days.map((d,i)=>'<section class="day-editor"><div class="day-head"><div><span class="day-number">DAY '+(i+1)+'</span><input data-day="'+d.id+'" data-field="title" value="'+esc(d.title)+'" aria-label="Day title"></div><button type="button" class="link-btn danger-text" onclick="removeItineraryDay(\''+d.id+'\')">Remove day</button></div>'+
       '<label>Date<input type="date" data-day="'+d.id+'" data-field="date" value="'+esc(d.date||'')+'"></label>'+
-      '<label>Day overview<textarea data-day="'+d.id+'" data-field="description" rows="2" placeholder="Describe the day's experience">'+esc(d.description||'')+'</textarea></label>'+
+      '<label>Day overview<textarea data-day="'+d.id+'" data-field="description" rows="2" placeholder="Describe the daily experience">'+esc(d.description||'')+'</textarea></label>'+
       '<label>Activities and schedule<textarea data-day="'+d.id+'" data-field="activities" rows="4" placeholder="Add activities, timings, transfers and meal details">'+esc(d.activities||'')+'</textarea></label>'+
       '<label class="upload-label">Photos for this day<input type="file" accept="image/jpeg,image/png,image/webp" multiple data-upload-day="'+d.id+'"><small>Upload JPG, PNG or WebP images up to 8 MB each.</small></label>'+
       '<div class="itinerary-images">'+(d.images||[]).map((path,j)=>'<div class="itinerary-image" data-image="'+esc(path)+'"><img alt="Itinerary photo" data-storage-path="'+esc(path)+'"><button type="button" onclick="removeItineraryImage(\''+d.id+'\','+j+')">×</button></div>').join('')+'</div></section>').join('');
