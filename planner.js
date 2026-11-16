@@ -109,8 +109,9 @@
     if(d.days.length===1)return alert('An itinerary must contain at least one day.');
     d.days=d.days.filter(x=>x.id!==id);$('itineraryDays').innerHTML=renderDays(d);signItineraryImages(d);
   };
-  window.removeItineraryImage=function(dayId,index){
+  window.removeItineraryImage=async function(dayId,index){
     const d=window.ktbsItineraryDraft?.days.find(x=>x.id===dayId);if(!d)return;
+    const path=d.images[index];if(path){const r=await C().sb.storage.from('itinerary-images').remove([path]);if(r.error)return alert(r.error.message);}
     d.images.splice(index,1);$('itineraryDays').innerHTML=renderDays(window.ktbsItineraryDraft);signItineraryImages(window.ktbsItineraryDraft);
   };
   function syncItineraryDates(){
@@ -125,7 +126,7 @@
     const d=window.ktbsItineraryDraft?.days.find(x=>x.id===dayId);if(!d)return;
     for(const file of files){
       if(!/^image\/(jpeg|png|webp)$/.test(file.type)||file.size>8*1024*1024){alert(file.name+' was skipped. Use JPG, PNG or WebP up to 8 MB.');continue;}
-      const path=org().id+'/'+window.ktbsItineraryDraft.id+'/'+dayId+'/'+uid()+'-'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+      const path=org().id+'/'+user().id+'/'+window.ktbsItineraryDraft.id+'/'+dayId+'/'+uid()+'-'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
       const r=await C().sb.storage.from('itinerary-images').upload(path,file,{contentType:file.type,upsert:false});
       if(r.error){alert('Could not upload '+file.name+': '+r.error.message);continue;}
       d.images.push(path);
