@@ -200,7 +200,7 @@
       '<div class="grid two calendar-lists"><div class="page-card"><h3>Upcoming tasks</h3>'+renderTaskList(tasks.filter(x=>x.due_at&&x.status!=='Completed').sort((a,b)=>new Date(a.due_at)-new Date(b.due_at)).slice(0,8))+'</div><div class="page-card"><h3>Upcoming events</h3>'+renderEventList(events.data||[])+'</div></div>';
     }catch(e){root.innerHTML='<div class="page-card"><h3>Could not load calendar</h3><p>'+esc(e.message)+'</p></div>';}
   };
-  function renderEventList(rows){return rows.length?'<ul class="event-list">'+rows.slice(0,8).map(x=>'<li><b>'+esc(x.title)+'</b><span>'+timeLabel(x.start_at)+'</span></li>').join('')+'</ul>':empty('No calendar events yet.');}
+  function renderEventList(rows){return rows.length?'<ul class="event-list">'+rows.slice(0,8).map(x=>'<li><div><b>'+esc(x.title)+'</b><span>'+timeLabel(x.start_at)+'</span></div><button class="link-btn" onclick="openCalendarEventEditor(\''+x.id+'\')">Edit</button></li>').join('')+'</ul>':empty('No calendar events yet.');}
   window.shiftCalendar=function(n){const d=window.ktbsCalendarMonth;window.ktbsCalendarMonth=new Date(d.getFullYear(),d.getMonth()+n,1);window.calendarPage();};
   window.resetCalendar=function(){window.ktbsCalendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);window.calendarPage();};
   window.openCalendarEventEditor=async function(id){
