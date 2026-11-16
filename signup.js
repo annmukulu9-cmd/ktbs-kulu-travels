@@ -1,9 +1,7 @@
 (() => {
   const $ = id => document.getElementById(id);
-  const supabaseClient = window.supabase.createClient(
-    window.KTBS_SUPABASE_URL,
-    window.KTBS_SUPABASE_ANON_KEY
-  );
+  // Reuse the single Supabase client created by app.js.
+  const supabaseClient = window.KTBSContext.sb;
   const signup = $("signupForm");
   const login = $("loginForm");
   const message = $("signupMessage");
