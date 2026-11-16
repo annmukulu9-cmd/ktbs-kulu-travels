@@ -58,6 +58,7 @@ function render(){
  document.querySelectorAll('#nav button').forEach(b=>{
    const restricted=['finance','reports'].includes(b.dataset.page);
    if(b.dataset.page==='platform-admin')b.classList.toggle('hidden',!platformAdmin);
+   else if(b.dataset.page==='team')b.classList.toggle('hidden',!isAdmin());
    else b.classList.toggle('hidden',restricted&&!isAdmin());
    b.classList.toggle('active',b.dataset.page===page);
  });
