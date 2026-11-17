@@ -41,9 +41,32 @@
   function renderItineraryList(rows){
     if(!rows.length)return empty('No itineraries yet. Create your first itinerary to start planning a journey.');
     return '<div class="table-scroll"><table class="planner-table"><thead><tr><th>Itinerary</th><th>Client</th><th>Destination</th><th>Travel dates</th><th>Days</th><th>Status</th><th>Action</th></tr></thead><tbody>'+
-    rows.map(x=>'<tr><td><b>'+esc(x.title)+'</b></td><td>'+esc((C().cache?.clients||[]).find(c=>c.id===x.client_id)?.name||'—')+'</td><td>'+esc(x.destination||'—')+'</td><td>'+dateLabel(x.start_date)+' – '+dateLabel(x.end_date)+'</td><td>'+((x.days||[]).length)+'</td><td>'+esc(x.status)+'</td><td><button class="link-btn" onclick="openItineraryEditor(\''+x.id+'\')">Edit</button> <button class="link-btn" data-id="'+x.id+'" onclick="exportItineraryPdf(this.dataset.id)">Save PDF</button></td></tr>').join('')+
+    rows.map(x=>'<tr><td><b>'+esc(x.title)+'</b></td><td>'+esc((C().cache?.clients||[]).find(c=>c.id===x.client_id)?.name||'—')+'</td><td>'+esc(x.destination||'—')+'</td><td>'+dateLabel(x.start_date)+' – '+dateLabel(x.end_date)+'</td><td>'+((x.days||[]).length)+'</td><td>'+esc(x.status)+'</td><td><button class="link-btn" data-id="'+x.id+'" onclick="viewItinerary(this.dataset.id)">View</button> <button class="link-btn" onclick="openItineraryEditor(\''+x.id+'\')">Edit</button> <button class="link-btn" data-id="'+x.id+'" onclick="exportItineraryPdf(this.dataset.id)">Save PDF</button></td></tr>').join('')+
     '</tbody></table></div>';
   }
+  window.viewItinerary=async function(id){
+    try{
+      const r=await C().sb.from('itineraries').select('*').eq('id',id).single();
+      if(r.error)throw r.error;
+      const item=r.data,days=Array.isArray(item.days)?item.days:[];
+      const client=(C().cache?.clients||[]).find(x=>x.id===item.client_id);
+      const booking=(C().cache?.bookings||[]).find(x=>x.id===item.booking_id);
+      const imageUrls={};
+      for(const day of days)for(const path of (Array.isArray(day.images)?day.images:[])){
+        const signed=await C().sb.storage.from('itinerary-images').createSignedUrl(path,3600);
+        if(!signed.error&&signed.data?.signedUrl)imageUrls[path]=signed.data.signedUrl;
+      }
+      const safe=v=>esc(v||'').replace(/\\n/g,'<br>');
+      const dayHtml=days.map((day,index)=>{
+        const photos=(day.images||[]).filter(path=>imageUrls[path]).map(path=>'<img src="'+imageUrls[path]+'" alt="Itinerary photo" style="width:100%;max-width:320px;max-height:220px;object-fit:cover;border-radius:8px;margin:8px 8px 0 0">').join('');
+        return '<section class="page-card" style="margin:12px 0"><div class="muted" style="font-weight:700;letter-spacing:2px">DAY '+(index+1)+'</div><h3>'+safe(day.title||('Day '+(index+1)))+'</h3>'+(day.date?'<p class="muted">'+dateLabel(day.date)+'</p>':'')+(day.description?'<p>'+safe(day.description)+'</p>':'')+(day.activities?'<div style="white-space:pre-wrap">'+safe(day.activities)+'</div>':'')+(photos?'<div style="display:flex;flex-wrap:wrap">'+photos+'</div>':'')+'</section>';
+      }).join('');
+      const range=(item.start_date||item.end_date)?dateLabel(item.start_date)+' – '+dateLabel(item.end_date):'';
+      C().openModal('Itinerary Preview',
+        '<div class="page-card"><div class="muted" style="font-weight:700;letter-spacing:2px">KULU TRAVELS · SEAMLESS TRAVEL</div><h2>'+safe(item.title)+'</h2><p>'+safe(item.destination)+(range?' · '+safe(range):'')+'</p><div class="grid"><div><small>Prepared for</small><br><b>'+safe(client?.name||'—')+'</b></div><div><small>Booking reference</small><br><b>'+safe(booking?.booking_no||'—')+'</b></div><div><small>Status</small><br><b>'+safe(item.status)+'</b></div></div>'+(item.introduction?'<hr><p>'+safe(item.introduction)+'</p>':'')+'</div>'+dayHtml+
+        '<div class="actions"><button class="secondary" type="button" onclick="closeModal()">Close</button><button class="secondary" type="button" data-id="'+id+'" onclick="exportItineraryPdf(this.dataset.id)">Save PDF</button></div>');
+    }catch(e){alert('Could not open itinerary: '+e.message);}
+  };
   window.exportItineraryPdf=async function(id){
     const win=window.open('about:blank','_blank');
     if(!win)return alert('Please allow pop-ups for KTBS to create the itinerary PDF.');
@@ -180,7 +203,7 @@
     const current=new Set(d.days.flatMap(day=>day.images||[]));
     const removed=[...(window.ktbsItineraryOriginalImages||[])].filter(path=>!current.has(path));
     if(removed.length){const cleanup=await C().sb.storage.from('itinerary-images').remove(removed);if(cleanup.error)console.warn('Some removed itinerary images could not be deleted:',cleanup.error.message);}
-    window.ktbsItineraryDraft=null;window.ktbsItineraryNewUploads=[];C().closeModal();await window.itinerariesPage();
+    window.ktbsItineraryDraft=null;window.ktbsItineraryNewUploads=[];C().closeModal();await window.itinerariesPage();await window.viewItinerary(d.id);
   }
 
   async function loadTasks(){
