@@ -18,7 +18,17 @@ Deno.serve(async (req) => {
 
   const apiKey = Deno.env.get("OPENAI_API_KEY");
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+  const publishableKeysRaw = Deno.env.get("SUPABASE_PUBLISHABLE_KEYS");
+  let publishableKey: string | undefined;
+  if (publishableKeysRaw) {
+    try {
+      const parsed = JSON.parse(publishableKeysRaw);
+      publishableKey = parsed.default ?? Object.values(parsed)[0] as string | undefined;
+    } catch {
+      console.error("SUPABASE_PUBLISHABLE_KEYS is not valid JSON");
+    }
+  }
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? publishableKey ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
   if (!apiKey || !supabaseUrl || !anonKey) {
     return json({ error: "The Kulu AI service is not configured yet. Please ask your KTBS administrator to complete setup." }, 503);
   }
