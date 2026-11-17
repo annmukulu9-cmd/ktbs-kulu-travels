@@ -52,18 +52,20 @@
       const client=(C().cache?.clients||[]).find(x=>x.id===item.client_id);
       const booking=(C().cache?.bookings||[]).find(x=>x.id===item.booking_id);
       const imageUrls={};
-      for(const day of days)for(const path of (Array.isArray(day.images)?day.images:[])){
+      for(const path of [...(item.cover_image_path?[item.cover_image_path]:[]),...days.flatMap(day=>Array.isArray(day.images)?day.images:[])]){
         const signed=await C().sb.storage.from('itinerary-images').createSignedUrl(path,3600);
         if(!signed.error&&signed.data?.signedUrl)imageUrls[path]=signed.data.signedUrl;
       }
       const safe=v=>esc(v||'').replace(/\\n/g,'<br>');
+      const coverPath=item.cover_image_path||days.flatMap(day=>Array.isArray(day.images)?day.images:[])[0]||null;
+      const coverHtml=coverPath&&imageUrls[coverPath]?'<div style="margin-bottom:16px"><img src="'+imageUrls[coverPath]+'" alt="Itinerary cover" style="width:100%;max-height:420px;object-fit:cover;border-radius:10px"></div>':'';
       const dayHtml=days.map((day,index)=>{
         const photos=(day.images||[]).filter(path=>imageUrls[path]).map(path=>'<img src="'+imageUrls[path]+'" alt="Itinerary photo" style="width:100%;max-width:320px;max-height:220px;object-fit:cover;border-radius:8px;margin:8px 8px 0 0">').join('');
         return '<section class="page-card" style="margin:12px 0"><div class="muted" style="font-weight:700;letter-spacing:2px">DAY '+(index+1)+'</div><h3>'+safe(day.title||('Day '+(index+1)))+'</h3>'+(day.date?'<p class="muted">'+dateLabel(day.date)+'</p>':'')+(day.description?'<p>'+safe(day.description)+'</p>':'')+(day.activities?'<div style="white-space:pre-wrap">'+safe(day.activities)+'</div>':'')+(photos?'<div style="display:flex;flex-wrap:wrap">'+photos+'</div>':'')+'</section>';
       }).join('');
       const range=(item.start_date||item.end_date)?dateLabel(item.start_date)+' – '+dateLabel(item.end_date):'';
       C().openModal('Itinerary Preview',
-        '<div class="page-card"><div class="muted" style="font-weight:700;letter-spacing:2px">KULU TRAVELS · SEAMLESS TRAVEL</div><h2>'+safe(item.title)+'</h2><p>'+safe(item.destination)+(range?' · '+safe(range):'')+'</p><div class="grid"><div><small>Prepared for</small><br><b>'+safe(client?.name||'—')+'</b></div><div><small>Booking reference</small><br><b>'+safe(booking?.booking_no||'—')+'</b></div><div><small>Status</small><br><b>'+safe(item.status)+'</b></div></div>'+(item.introduction?'<hr><p>'+safe(item.introduction)+'</p>':'')+'</div>'+dayHtml+
+        '<div class="page-card">'+coverHtml+'<div class="muted" style="font-weight:700;letter-spacing:2px">KULU TRAVELS · SEAMLESS TRAVEL</div><h2>'+safe(item.title)+'</h2><p>'+safe(item.destination)+(range?' · '+safe(range):'')+'</p><div class="grid"><div><small>Prepared for</small><br><b>'+safe(client?.name||'—')+'</b></div><div><small>Booking reference</small><br><b>'+safe(booking?.booking_no||'—')+'</b></div><div><small>Status</small><br><b>'+safe(item.status)+'</b></div></div>'+(item.introduction?'<hr><p>'+safe(item.introduction)+'</p>':'')+'</div>'+dayHtml+
         '<div class="actions"><button class="secondary" type="button" onclick="closeModal()">Close</button><button class="secondary" type="button" data-id="'+id+'" onclick="exportItineraryPdf(this.dataset.id)">Save PDF</button></div>');
     }catch(e){alert('Could not open itinerary: '+e.message);}
   };
@@ -80,19 +82,21 @@
       const client=(C().cache?.clients||[]).find(x=>x.id===item.client_id);
       const booking=(C().cache?.bookings||[]).find(x=>x.id===item.booking_id);
       const imageUrls={};
-      for(const day of days)for(const path of (Array.isArray(day.images)?day.images:[])){
+      for(const path of [...(item.cover_image_path?[item.cover_image_path]:[]),...days.flatMap(day=>Array.isArray(day.images)?day.images:[])]){
         const signed=await C().sb.storage.from('itinerary-images').createSignedUrl(path,3600);
         if(!signed.error&&signed.data?.signedUrl)imageUrls[path]=signed.data.signedUrl;
       }
       const safe=v=>esc(v).replace(/\n/g,'<br>');
+      const coverPath=item.cover_image_path||days.flatMap(day=>Array.isArray(day.images)?day.images:[])[0]||null;
+      const coverHero=coverPath&&imageUrls[coverPath]?'<div class="cover-hero"><img src="'+imageUrls[coverPath]+'" alt="Itinerary cover"><div class="cover-overlay"><div class="cover-brand">KULU TRAVELS · SEAMLESS TRAVEL</div><h1>'+safe(item.title||'Travel Itinerary')+'</h1><div>'+safe(item.destination||'')+(range?' · '+safe(range):'')+'</div></div></div>':'';
       const range=(item.start_date||item.end_date)?dateLabel(item.start_date)+' – '+dateLabel(item.end_date):'';
       const dayHtml=days.map((day,index)=>{
         const photos=(day.images||[]).filter(path=>imageUrls[path]).map(path=>'<img class="day-photo" src="'+imageUrls[path]+'" alt="Itinerary photo">').join('');
         return '<section class="day"><div class="day-kicker">DAY '+(index+1)+'</div><h2>'+safe(day.title||('Day '+(index+1)))+'</h2>'+(day.date?'<div class="day-date">'+dateLabel(day.date)+'</div>':'')+(day.description?'<p class="overview">'+safe(day.description)+'</p>':'')+(day.activities?'<div class="activities">'+safe(day.activities)+'</div>':'')+(photos?'<div class="photos">'+photos+'</div>':'')+'</section>';
       }).join('');
       const html='<!doctype html><html><head><meta charset="utf-8"><title>'+safe(item.title||'Travel Itinerary')+'</title><style>'+
-        '@page{size:A4;margin:16mm 15mm 18mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#203536;margin:0;font-size:11pt;line-height:1.55}header{border-bottom:3px solid #18b9c3;padding:0 0 16px;margin-bottom:22px}.brand{font-size:10pt;letter-spacing:3px;color:#078b91;font-weight:700;text-transform:uppercase}h1{font-family:Georgia,serif;font-size:27pt;line-height:1.15;margin:10px 0 8px;color:#153b3d}.meta{color:#587071;font-size:10pt}.intro{font-size:11pt;margin:20px 0 24px;white-space:normal}.summary{display:flex;flex-wrap:wrap;gap:8px 24px;background:#f0f8f7;padding:13px 15px;border-radius:8px;margin-top:18px}.summary span{display:block;font-size:9pt;color:#466}.day{break-inside:avoid-page;border-top:1px solid #cbdcda;padding:18px 0 14px;margin-top:12px}.day-kicker{font-size:9pt;letter-spacing:2px;color:#078b91;font-weight:bold}.day h2{font:19pt Georgia,serif;margin:3px 0;color:#183f40}.day-date{font-size:9pt;color:#607778;margin-bottom:8px}.overview{font-weight:600}.activities{white-space:pre-wrap}.photos{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.day-photo{width:calc(50% - 5px);max-height:230px;object-fit:cover;border-radius:6px;break-inside:avoid}.actions{position:sticky;top:0;background:#fff;padding:10px 0;text-align:right;border-bottom:1px solid #ddd;margin-bottom:12px}@media print{.actions{display:none}.day{break-inside:avoid-page}a{color:inherit;text-decoration:none}}'+
-        '</style></head><body><div class="actions"><button onclick="window.print()">Print / Save as PDF</button></div><header><div class="brand">KULU TRAVELS · SEAMLESS TRAVEL</div><h1>'+safe(item.title||'Travel Itinerary')+'</h1><div class="meta">'+safe(item.destination||'')+(range?' · '+safe(range):'')+'</div><div class="summary">'+(client?'<span><b>Prepared for</b><br>'+safe(client.name)+'</span>':'')+(booking?'<span><b>Booking reference</b><br>'+safe(booking.booking_no)+'</span>':'')+'<span><b>Itinerary status</b><br>'+safe(item.status||'Draft')+'</span></div></header>'+(item.introduction?'<div class="intro">'+safe(item.introduction)+'</div>':'')+dayHtml+'</body></html>';
+        '@page{size:A4;margin:16mm 15mm 18mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#203536;margin:0;font-size:11pt;line-height:1.55}header{border-bottom:3px solid #18b9c3;padding:0 0 16px;margin-bottom:22px}.brand{font-size:10pt;letter-spacing:3px;color:#078b91;font-weight:700;text-transform:uppercase}h1{font-family:Georgia,serif;font-size:27pt;line-height:1.15;margin:10px 0 8px;color:#153b3d}.meta{color:#587071;font-size:10pt}.intro{font-size:11pt;margin:20px 0 24px;white-space:normal}.summary{display:flex;flex-wrap:wrap;gap:8px 24px;background:#f0f8f7;padding:13px 15px;border-radius:8px;margin-top:18px}.summary span{display:block;font-size:9pt;color:#466}.cover-hero{height:235mm;position:relative;overflow:hidden;page-break-after:always;color:#fff}.cover-hero img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}.cover-overlay{position:absolute;inset:0;padding:22mm 18mm;display:flex;flex-direction:column;justify-content:flex-end;background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,45,48,.76))}.cover-brand{font-size:10pt;letter-spacing:3px;font-weight:700;margin-bottom:14mm}.cover-overlay h1{font:30pt Georgia,serif;color:#fff;margin:0 0 8px}.cover-overlay div:last-child{font-size:11pt}.day{break-inside:avoid-page;border-top:1px solid #cbdcda;padding:18px 0 14px;margin-top:12px}.day-kicker{font-size:9pt;letter-spacing:2px;color:#078b91;font-weight:bold}.day h2{font:19pt Georgia,serif;margin:3px 0;color:#183f40}.day-date{font-size:9pt;color:#607778;margin-bottom:8px}.overview{font-weight:600}.activities{white-space:pre-wrap}.photos{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.day-photo{width:calc(50% - 5px);max-height:230px;object-fit:cover;border-radius:6px;break-inside:avoid}.actions{position:sticky;top:0;background:#fff;padding:10px 0;text-align:right;border-bottom:1px solid #ddd;margin-bottom:12px}@media print{.actions{display:none}.day{break-inside:avoid-page}a{color:inherit;text-decoration:none}}'+
+        '</style></head><body><div class="actions"><button onclick="window.print()">Print / Save as PDF</button></div>'+coverHero+'<header><div class="brand">KULU TRAVELS · SEAMLESS TRAVEL</div><h1>'+safe(item.title||'Travel Itinerary')+'</h1><div class="meta">'+safe(item.destination||'')+(range?' · '+safe(range):'')+'</div><div class="summary">'+(client?'<span><b>Prepared for</b><br>'+safe(client.name)+'</span>':'')+(booking?'<span><b>Booking reference</b><br>'+safe(booking.booking_no)+'</span>':'')+'<span><b>Itinerary status</b><br>'+safe(item.status||'Draft')+'</span></div></header>'+(item.introduction?'<div class="intro">'+safe(item.introduction)+'</div>':'')+dayHtml+'</body></html>';
       win.document.open();win.document.write(html);win.document.close();
       await Promise.all(Array.from(win.document.images).map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;})));
       win.focus();
@@ -139,7 +143,7 @@
       draft={...r.data,days:Array.isArray(r.data.days)?r.data.days.map(day=>({...day,images:Array.isArray(day.images)?day.images:[]})):[]};
     }else draft={id:uid(),title:'',client_id:'',booking_id:'',destination:'',start_date:'',end_date:'',status:'Draft',introduction:'',days:[freshDay(0)]};
     window.ktbsItineraryDraft=draft;
-    window.ktbsItineraryOriginalImages=new Set(draft.days.flatMap(x=>x.images||[]));
+    window.ktbsItineraryOriginalImages=new Set([...draft.days.flatMap(x=>x.images||[]),...(draft.cover_image_path?[draft.cover_image_path]:[])]);
     window.ktbsItineraryNewUploads=[];
     C().openModal('Build Itinerary','<form id="itineraryForm"><div class="form-grid">'+
       '<label class="wide">Itinerary title<input name="title" required maxlength="180" value="'+esc(draft.title)+'" placeholder="e.g. 5-Day Maasai Mara Luxury Safari"></label>'+
@@ -150,6 +154,7 @@
       '<label>Start date<input name="start_date" type="date" value="'+esc(draft.start_date||'')+'"></label>'+
       '<label>End date<input name="end_date" type="date" value="'+esc(draft.end_date||'')+'"></label>'+
       '<label class="wide">Introduction<textarea name="introduction" rows="2" placeholder="A warm introduction to the journey">'+esc(draft.introduction||'')+'</textarea></label></div>'+
+      '<div class="page-card cover-editor"><h3>First-page cover image</h3><p class="muted">Upload a dedicated cover photo, or leave it empty to automatically use the first photo from your daily itinerary.</p><label class="upload-label">Cover photo<input id="itineraryCoverUpload" type="file" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG or WebP up to 8 MB. Landscape photos work best.</small></label><div id="itineraryCoverPreview">'+(draft.cover_image_path?'<img data-cover-path="'+esc(draft.cover_image_path)+'" alt="Itinerary cover" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px">':'<p class="muted">Automatic cover: first available day photo</p>')+'</div>'+(draft.cover_image_path?'<button type="button" class="link-btn danger-text" onclick="removeItineraryCover()">Remove cover photo</button>':'')+'</div>'+
       '<div class="section-head itinerary-days-title"><h3>Daily itinerary</h3><button type="button" class="secondary" onclick="addItineraryDay()">＋ Add day</button></div>'+
       '<div id="itineraryDays">'+renderDays(draft)+'</div><div class="actions"><button type="button" class="secondary" onclick="cancelItineraryEditor()">Cancel</button><button class="primary">Save Itinerary</button></div></form>');
     $('itineraryForm').elements.client_id.onchange=e=>{$('itineraryForm').elements.booking_id.innerHTML=bookingOptions(e.target.value,'');};
@@ -159,6 +164,7 @@
     };
     $('itineraryForm').onchange=async e=>{
       if(e.target.dataset.uploadDay){await uploadItineraryImages(e.target.dataset.uploadDay,e.target.files);e.target.value='';}
+      if(e.target.id==='itineraryCoverUpload'){await uploadItineraryCover(e.target.files?.[0]);e.target.value='';}
       if(e.target.name==='start_date'||e.target.name==='end_date')syncItineraryDates();
     };
     $('itineraryForm').onsubmit=saveItinerary;
@@ -189,6 +195,26 @@
     window.ktbsItineraryDraft.days.forEach((d,i)=>{if(!d.date||i>0){const x=new Date((start||dateOnly(new Date()))+'T12:00:00');x.setDate(x.getDate()+i);d.date=dateOnly(x);}});
     $('itineraryDays').innerHTML=renderDays(window.ktbsItineraryDraft);signItineraryImages(window.ktbsItineraryDraft);
   }
+  async function uploadItineraryCover(file){
+    if(!file)return;
+    if(!/^image\/(jpeg|png|webp)$/.test(file.type)||file.size>8*1024*1024)return alert('Use JPG, PNG or WebP up to 8 MB.');
+    const d=window.ktbsItineraryDraft;if(!d)return;
+    const path=org().id+'/'+user().id+'/'+d.id+'/cover/'+uid()+'-'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const r=await C().sb.storage.from('itinerary-images').upload(path,file,{contentType:file.type,upsert:false});
+    if(r.error)return alert('Could not upload cover photo: '+r.error.message);
+    if(d.cover_image_path&&window.ktbsItineraryNewUploads.includes(d.cover_image_path)){await C().sb.storage.from('itinerary-images').remove([d.cover_image_path]);window.ktbsItineraryNewUploads=window.ktbsItineraryNewUploads.filter(x=>x!==d.cover_image_path);}
+    d.cover_image_path=path;window.ktbsItineraryNewUploads.push(path);
+    const signed=await C().sb.storage.from('itinerary-images').createSignedUrl(path,3600);
+    const preview=$('itineraryCoverPreview');if(preview)preview.innerHTML=signed.data?.signedUrl?'<img src="'+signed.data.signedUrl+'" alt="Itinerary cover" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px">':'';
+    if(!document.querySelector('.cover-editor .danger-text'))preview?.insertAdjacentHTML('afterend','<button type="button" class="link-btn danger-text" onclick="removeItineraryCover()">Remove cover photo</button>');
+  }
+  window.removeItineraryCover=function(){
+    const d=window.ktbsItineraryDraft;if(!d)return;
+    if(d.cover_image_path&&window.ktbsItineraryNewUploads.includes(d.cover_image_path)){C().sb.storage.from('itinerary-images').remove([d.cover_image_path]);window.ktbsItineraryNewUploads=window.ktbsItineraryNewUploads.filter(x=>x!==d.cover_image_path);}
+    d.cover_image_path=null;
+    const p=$('itineraryCoverPreview');if(p)p.innerHTML='<p class="muted">Automatic cover: first available day photo</p>';
+    document.querySelector('.cover-editor .danger-text')?.remove();
+  };
   async function uploadItineraryImages(dayId,fileList){
     const files=Array.from(fileList||[]);if(!files.length)return;
     const d=window.ktbsItineraryDraft?.days.find(x=>x.id===dayId);if(!d)return;
@@ -205,12 +231,12 @@
     e.preventDefault();const f=e.target,d=window.ktbsItineraryDraft,x=Object.fromEntries(new FormData(f));
     if(!admin()&&!x.client_id)return alert('Select a client assigned to your account.');
     if(x.end_date&&x.start_date&&x.end_date<x.start_date)return alert('End date cannot be before the start date.');
-    const payload={organization_id:org().id,title:x.title.trim(),client_id:x.client_id||null,booking_id:x.booking_id||null,destination:x.destination||'',start_date:x.start_date||null,end_date:x.end_date||null,status:x.status,introduction:x.introduction||'',days:d.days,updated_by:user().id};
+    const payload={organization_id:org().id,title:x.title.trim(),client_id:x.client_id||null,booking_id:x.booking_id||null,destination:x.destination||'',start_date:x.start_date||null,end_date:x.end_date||null,status:x.status,introduction:x.introduction||'',cover_image_path:d.cover_image_path||null,days:d.days,updated_by:user().id};
     let r;
     if(d.created_at)r=await C().sb.from('itineraries').update(payload).eq('id',d.id);
     else r=await C().sb.from('itineraries').insert({...payload,id:d.id,created_by:user().id});
     if(r.error)return alert('Could not save itinerary: '+r.error.message);
-    const current=new Set(d.days.flatMap(day=>day.images||[]));
+    const current=new Set([...d.days.flatMap(day=>day.images||[]),...(d.cover_image_path?[d.cover_image_path]:[])]);
     const removed=[...(window.ktbsItineraryOriginalImages||[])].filter(path=>!current.has(path));
     if(removed.length){const cleanup=await C().sb.storage.from('itinerary-images').remove(removed);if(cleanup.error)console.warn('Some removed itinerary images could not be deleted:',cleanup.error.message);}
     window.ktbsItineraryDraft=null;window.ktbsItineraryNewUploads=[];C().closeModal();await window.itinerariesPage();await window.viewItinerary(d.id);
