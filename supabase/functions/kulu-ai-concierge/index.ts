@@ -107,19 +107,40 @@ ${catalogue}`;
     })),
     { role: "user", parts: [{ text: message }] },
   ];
-  const completion = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent", {
-    method: "POST",
-    headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents,
-      generationConfig: { temperature: 0.3, maxOutputTokens: 700 },
-    }),
+  const requestBody = JSON.stringify({
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    contents,
+    generationConfig: { temperature: 0.3, maxOutputTokens: 700 },
   });
-  if (!completion.ok) {
-    const detail = await completion.text();
-    console.error("Gemini request failed", completion.status, detail.slice(0, 500));
-    return json({ error: "The AI assistant is temporarily unavailable. Please try again shortly." }, 502);
+  const callGemini = (model: string) => fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+    {
+      method: "POST",
+      headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
+      body: requestBody,
+    },
+  );
+
+  // Free-tier model capacity can fluctuate. Retry transient overloads, then
+  // use Google's smaller free-tier Flash-Lite model as a fallback.
+  let completion: Response | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    completion = await callGemini("gemini-3.5-flash-lite");
+    if (completion.ok || ![503, 504].includes(completion.status)) break;
+    if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500 * (2 ** attempt)));
+  }
+  if (completion && !completion.ok && [503, 504].includes(completion.status)) {
+    console.warn("Primary Gemini model overloaded; trying Flash-Lite fallback", completion.status);
+    completion = await callGemini("gemini-3.1-flash-lite");
+  }
+  if (!completion || !completion.ok) {
+    const status = completion?.status ?? 0;
+    const detail = completion ? await completion.text() : "No response from Gemini";
+    console.error("Gemini request failed after retry/fallback", status, detail.slice(0, 500));
+    const message = status === 429
+      ? "The free AI usage limit has temporarily been reached. Please wait before trying again."
+      : "The AI service is temporarily busy. Please try again in a moment.";
+    return json({ error: message }, 503);
   }
   const result = await completion.json();
   const reply = result.candidates?.[0]?.content?.parts
