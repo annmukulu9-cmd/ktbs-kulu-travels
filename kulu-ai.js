@@ -3,6 +3,7 @@
   style.textContent = `
     .kulu-ai-launch{position:fixed;right:26px;bottom:24px;z-index:9000;border:0;border-radius:999px;padding:13px 19px;background:#0aa3b3;color:#fff;font-weight:800;box-shadow:0 8px 28px #163b4a2b;display:flex;align-items:center;gap:9px}
     .kulu-ai-launch:hover{background:#087f8d}
+    .kulu-ai-panel[hidden],.kulu-ai-launch[hidden]{display:none!important}
     .kulu-ai-panel{position:fixed;right:26px;bottom:84px;width:min(390px,calc(100vw - 28px));height:min(570px,calc(100vh - 115px));z-index:9001;background:#fff;border:1px solid #dce8eb;border-radius:18px;box-shadow:0 18px 55px #183b4a35;display:flex;flex-direction:column;overflow:hidden}
     .kulu-ai-head{padding:17px 18px;background:linear-gradient(120deg,#eafafb,#fff);border-bottom:1px solid #e5ebef;display:flex;justify-content:space-between;align-items:center}
     .kulu-ai-head strong{font:500 20px Georgia,serif;color:#172b35}.kulu-ai-head small{display:block;color:#6c7883;font-size:11px;margin-top:4px}
