@@ -120,6 +120,16 @@
       const r=await C().sb.storage.from('itinerary-images').createSignedUrl(path,3600);
       if(!r.error&&r.data?.signedUrl)el.src=r.data.signedUrl;
     }
+    const coverPath=draft.cover_image_path||(draft.days||[]).flatMap(d=>d.images||[])[0]||null;
+    const coverEl=draft.cover_image_path?document.querySelector('img[data-cover-path="'+CSS.escape(draft.cover_image_path)+'"]'):null;
+    const preview=$('itineraryCoverPreview');
+    if(coverPath&&preview){
+      const r=await C().sb.storage.from('itinerary-images').createSignedUrl(coverPath,3600);
+      if(!r.error&&r.data?.signedUrl){
+        if(coverEl)coverEl.src=r.data.signedUrl;
+        else if(!draft.cover_image_path)preview.innerHTML='<img src="'+r.data.signedUrl+'" alt="Automatic itinerary cover" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px"><small class="muted">Using the first daily photo as the cover</small>';
+      }
+    }
   }
   window.openItineraryEditor=async function(id){
     let draft;
