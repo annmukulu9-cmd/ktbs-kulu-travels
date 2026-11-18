@@ -14,7 +14,7 @@
   const data=await res.json();if(!res.ok||!data.success){fail(data.error||'This link is no longer available.');return;}
   const it=data.itinerary,days=Array.isArray(it.days)?it.days:[];
   const img=path=>data.images?.[path]||'';
-  const cover=it.cover_image_path&&img(it.cover_image_path)?'<img class="cover" src="'+esc(img(it.cover_image_path))+'" alt="Journey cover">':'';
+  const coverPath=it.cover_image_path||(days.flatMap(d=>Array.isArray(d.images)?d.images:[])[0]||null);\n  const cover=coverPath&&img(coverPath)?'<img class="cover" src="'+esc(img(coverPath))+'" alt="Journey cover">':'';
   const dayHtml=days.map((d,i)=>{
    const rows=String(d.activities||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(line=>{
     if(/^time\s*(?:\||\/|and)?\s*activity$/i.test(line))return '';
