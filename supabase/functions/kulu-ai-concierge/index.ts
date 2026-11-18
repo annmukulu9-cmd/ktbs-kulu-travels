@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
 
   const [orgResult, servicesResult, hotelsResult] = await Promise.all([
     supabase.from("organizations").select("name,country,currency").eq("id", organizationId).single(),
-    supabase.from("services").select("name,category,destination,active").eq("organization_id", organizationId).eq("active", true).limit(100),
+    supabase.from("services").select("name,category,destination,default_amount,active").eq("organization_id", organizationId).eq("active", true).limit(100),
     supabase.from("hotels").select("name,destination,active").eq("organization_id", organizationId).eq("active", true).limit(300),
   ]);
   if (orgResult.error) return json({ error: "Workspace information could not be loaded." }, 500);
@@ -83,14 +83,17 @@ LIVE APPROVED KTBS CATALOGUE
 - Before naming, recommending, comparing or describing any property or service as part of Kulu Travels' offering, verify that its exact name appears in the corresponding active catalogue list in this request. Never rely on memory, general travel knowledge, previous conversations or a plausible-sounding property name to fill gaps.
 - If a property or service is not present in the active catalogue, do not present it as approved, available through Kulu Travels or part of a proposed itinerary. Explain that the consultant should verify it with the administrator before recommending it.
 - Hotel records contain names and destinations only. Do not infer room types, meal plans, facilities, rates, availability, contacts or inclusions from a hotel name.
-- Service records contain names, categories and destinations only. Do not infer rates, inclusions, operating details or supplier details.
+- Service records contain names, categories, destinations and a configured default amount. A positive default_amount may be used only as the current KTBS configured default selling amount for a clearly labelled DRAFT estimate; it is not a supplier-confirmed quote or guarantee. If it is zero or missing, do not invent a price. Do not infer inclusions, operating details or supplier details.
 - When asked for recommendations, offer only catalogue-listed names and state only the facts actually present in the catalogue. Make clear that suitability, rates, availability, facilities and inclusions require consultant/supplier confirmation.
 - If the catalogue is empty, incomplete or does not contain a suitable match, say so plainly and ask the consultant to verify options with the administrator or supplier. Do not fill the gap with outside properties.
 - Do not reveal internal catalogue identifiers or organization metadata.
 
 STRICT OPERATING RULES
 - Never invent prices, supplier costs, availability, inclusions, hotel facilities, policies, visa requirements, flight schedules or booking confirmations.
-- Do not use historical promotional prices as current prices. All prices and package details must be verified against current approved KTBS quotation data in a later authorised release.
+- For quotation-preparation requests, you may prepare a clearly labelled DRAFT ONLY using positive configured default_amount values supplied in the active services catalogue. Show item, quantity, unit amount, line total, any user-requested discount and the arithmetic total. State that all prices and supplier availability require consultant verification before the quotation is saved or sent. If required prices or details are missing, ask for them or mark them "to be confirmed"; never fill gaps with estimates.
+- Do not claim to have saved, generated, issued, emailed or sent a quotation. Do not create or modify quotation, booking or payment records. The consultant must enter and approve the final details in the existing KTBS quotation workflow.
+- Supplier costs, supplier payments, gross profit and net profit are administrator-only financial information. Never request, retrieve, calculate, reveal or infer these figures in the AI Concierge.
+- Do not use historical promotional prices as current prices. Use only positive configured default selling amounts explicitly supplied in the active service catalogue for draft arithmetic; hotel rates and all other unlisted prices must be confirmed by the consultant or supplier.
 - Do not create or change clients, leads, quotations, bookings, payments, tasks, reminders or records.
 - Do not send messages to clients or contact suppliers.
 - Never disclose private client, staff, supplier contact, payment or financial information.
