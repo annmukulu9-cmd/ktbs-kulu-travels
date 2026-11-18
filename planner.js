@@ -32,8 +32,8 @@
       else rows.push({time:'—',activity:line.replace(/^(?:notes?|remarks?)\s*:\s*/i,'')});
     }
     if(!rows.length)return '';
-    return '<div class="schedule-wrap '+mode+'"><table class="schedule-table"><thead><tr><th scope="col">TIME</th><th scope="col">ACTIVITY</th></tr></thead><tbody>'+
-      rows.map(row=>'<tr><td class="schedule-time">'+esc(row.time)+'</td><td class="schedule-activity">'+esc(row.activity)+'</td></tr>').join('')+
+    return '<div class="schedule-wrap '+mode+'" style="width:100%;max-width:760px;margin:18px auto 8px;text-align:left"><table class="schedule-table" style="width:100%;border-collapse:collapse;border:1px solid #d7e5e4;border-radius:9px;overflow:hidden;background:#fff;font-size:10.5pt"><thead><tr><th scope="col" style="width:27%;background:#eaf5f4;color:#12666a;font-size:8.5pt;letter-spacing:1.5px;padding:11px 14px;border-bottom:1px solid #cbdcda;text-align:center">TIME</th><th scope="col" style="background:#eaf5f4;color:#12666a;font-size:8.5pt;letter-spacing:1.5px;padding:11px 14px;border-bottom:1px solid #cbdcda;text-align:left">ACTIVITY</th></tr></thead><tbody>'+
+      rows.map(row=>'<tr><td class="schedule-time" style="width:27%;white-space:nowrap;text-align:center;font-weight:700;color:#176b70;padding:11px 14px;border-bottom:1px solid #e6eeee;background:#f7fbfa;font-variant-numeric:tabular-nums;vertical-align:top">'+esc(row.time)+'</td><td class="schedule-activity" style="text-align:left;color:#263f40;line-height:1.5;padding:11px 14px;border-bottom:1px solid #e6eeee;vertical-align:top">'+esc(row.activity)+'</td></tr>').join('')+
       '</tbody></table></div>';
   }
   function tableCard(title,body){return '<div class="page-card"><div class="section-head"><h3>'+title+'</h3></div>'+body+'</div>';}
