@@ -71,6 +71,8 @@
   let currentOrganizationId = null;
   let currentUserId = null;
   let currentArchived = false;
+  let currentReadOnly = false;
+  let isWorkspaceAdmin = false;
   let busy = false;
 
   function addMessage(role, content) {
@@ -87,6 +89,7 @@
   function resetConversation() {
     currentConversationId = null;
     currentArchived = false;
+    currentReadOnly = false;
     history.length = 0;
     showWelcome();
     status.textContent = "";
@@ -102,6 +105,8 @@
     const { data: orgId, error } = await aiClient.rpc("current_organization_id");
     if (error || !orgId) throw new Error("Your active KTBS workspace could not be identified.");
     currentOrganizationId = orgId;
+    const adminResult = await aiClient.rpc("is_org_admin", { target_org: orgId });
+    isWorkspaceAdmin = !adminResult.error && adminResult.data === true;
   }
   function formatDate(value) {
     if (!value) return "";
@@ -112,14 +117,14 @@
     await ensureWorkspace();
     historyList.innerHTML = '<div class="kulu-ai-history-empty">Loading conversations…</div>';
     const { data, error } = await aiClient.from("kulu_ai_conversations")
-      .select("id,title,last_message_at,archived_at")
+      .select("id,user_id,title,last_message_at,archived_at")
       .eq("organization_id", currentOrganizationId)
-      .eq("user_id", currentUserId)
       .order("last_message_at", { ascending: false })
       .limit(100);
     if (error) throw error;
     historyList.innerHTML = "";
-    const rows = (data || []).filter(row => !!row.archived_at === showArchived);
+    const visibleRows = isWorkspaceAdmin ? (data || []) : (data || []).filter(row => row.user_id === currentUserId);
+    const rows = visibleRows.filter(row => !!row.archived_at === showArchived);
     if (!rows.length) {
       historyList.innerHTML = '<div class="kulu-ai-history-empty">No conversations here yet.</div>';
       return;
@@ -133,17 +138,20 @@
       open.textContent = (row.title || "New conversation") + " · " + formatDate(row.last_message_at);
       open.title = row.title || "New conversation";
       open.addEventListener("click", () => openConversation(row.id));
-      const archive = document.createElement("button");
-      archive.type = "button";
-      archive.className = "kulu-ai-history-action";
-      archive.textContent = row.archived_at ? "Restore" : "Archive";
-      archive.addEventListener("click", () => setArchived(row.id, !row.archived_at));
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.className = "kulu-ai-history-action";
-      remove.textContent = "Delete";
-      remove.addEventListener("click", () => deleteConversation(row.id));
-      wrap.append(open, archive, remove);
+      wrap.append(open);
+      if (row.user_id === currentUserId) {
+        const archive = document.createElement("button");
+        archive.type = "button";
+        archive.className = "kulu-ai-history-action";
+        archive.textContent = row.archived_at ? "Restore" : "Archive";
+        archive.addEventListener("click", () => setArchived(row.id, !row.archived_at));
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "kulu-ai-history-action";
+        remove.textContent = "Delete";
+        remove.addEventListener("click", () => deleteConversation(row.id));
+        wrap.append(archive, remove);
+      }
       historyList.appendChild(wrap);
     });
   }
@@ -151,7 +159,7 @@
   async function openConversation(id) {
     status.textContent = "Loading conversation…";
     const { data: conversation, error: conversationError } = await aiClient.from("kulu_ai_conversations")
-      .select("id,title,archived_at")
+      .select("id,user_id,title,archived_at")
       .eq("id", id)
       .single();
     if (conversationError) { status.textContent = conversationError.message; return; }
@@ -162,6 +170,7 @@
     if (error) { status.textContent = error.message; return; }
     currentConversationId = conversation.id;
     currentArchived = !!conversation.archived_at;
+    currentReadOnly = conversation.user_id !== currentUserId;
     history.length = 0;
     messages.innerHTML = "";
     (rows || []).forEach(row => {
@@ -169,9 +178,9 @@
       history.push({ role: row.role, content: row.content });
     });
     historyPanel.hidden = true;
-    input.disabled = currentArchived;
-    sendButton.disabled = currentArchived;
-    status.textContent = currentArchived ? "This conversation is archived. Restore it from History to continue." : "";
+    input.disabled = currentArchived || currentReadOnly;
+    sendButton.disabled = currentArchived || currentReadOnly;
+    status.textContent = currentArchived ? "This conversation is archived. Restore it from History to continue." : currentReadOnly ? "Administrator view · This is another consultant’s conversation and is read-only." : "";
   }
   async function setArchived(id, archived) {
     const { error } = await aiClient.from("kulu_ai_conversations")
@@ -264,7 +273,7 @@
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (busy || currentArchived) return;
+    if (busy || currentArchived || currentReadOnly) return;
     const message = input.value.trim();
     if (!message) return;
     busy = true;
@@ -295,7 +304,7 @@
       status.textContent = (error.message || "Kulu AI is not available yet.") + " Your message may already be saved in this conversation.";
     } finally {
       busy = false;
-      sendButton.disabled = currentArchived;
+      sendButton.disabled = currentArchived || currentReadOnly;
       input.focus();
     }
   });
