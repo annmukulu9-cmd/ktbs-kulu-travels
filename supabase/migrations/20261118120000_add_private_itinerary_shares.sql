@@ -14,6 +14,9 @@ create table if not exists public.itinerary_shares (
 create index if not exists itinerary_shares_itinerary_idx on public.itinerary_shares(itinerary_id,created_at desc);
 create index if not exists itinerary_shares_org_idx on public.itinerary_shares(organization_id);
 alter table public.itinerary_shares enable row level security;
+drop policy if exists itinerary_shares_select_org on public.itinerary_shares;
+drop policy if exists itinerary_shares_insert_org on public.itinerary_shares;
+drop policy if exists itinerary_shares_update_org on public.itinerary_shares;
 create policy itinerary_shares_select_org on public.itinerary_shares for select to authenticated using (
  public.is_org_member(organization_id) and (public.is_org_admin(organization_id) or exists (
   select 1 from public.itineraries i join public.clients c on c.id=i.client_id
