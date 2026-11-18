@@ -70,7 +70,8 @@
     status.textContent = "Kulu AI is thinking…";
     form.querySelector("button").disabled = true;
     try {
-      const { data, error } = await aiClient.functions.invoke("kulu-ai-concierge", {
+      const conciergeFunction = window.KTBS_READ_ONLY_PREVIEW === true ? "kulu-ai-concierge-preview" : "kulu-ai-concierge";
+      const { data, error } = await aiClient.functions.invoke(conciergeFunction, {
         body: { message, history: history.slice(-8) }
       });
       if (error) throw error;
