@@ -116,6 +116,7 @@
   async function loadConversationList() {
     await ensureWorkspace();
     historyList.innerHTML = '<div class="kulu-ai-history-empty">Loading conversations…</div>';
+    historyPanel.querySelector(".kulu-ai-history-title").textContent = isWorkspaceAdmin ? "Workspace conversations" : "Your conversations";
     const { data, error } = await aiClient.from("kulu_ai_conversations")
       .select("id,user_id,title,last_message_at,archived_at")
       .eq("organization_id", currentOrganizationId)
