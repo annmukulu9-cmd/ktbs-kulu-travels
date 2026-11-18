@@ -35,5 +35,6 @@ create policy itinerary_shares_update_org on public.itinerary_shares for update 
   where i.id=itinerary_shares.itinerary_id and c.consultant_id=(select auth.uid())
  )) 
 ) with check (public.is_org_member(organization_id));
-grant select,insert,update on public.itinerary_shares to authenticated;
+grant select,insert on public.itinerary_shares to authenticated;
+grant update (revoked_at) on public.itinerary_shares to authenticated;
 revoke all on public.itinerary_shares from anon;
