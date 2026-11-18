@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your Journey | Kulu Travels</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f5f7f5;color:#243331;font-family:Arial,sans-serif}.shell{max-width:900px;margin:0 auto;background:#fff;min-height:100vh;box-shadow:0 4px 28px #163b3510}.top{text-align:center;padding:26px 20px 12px}.logo{width:150px;max-height:80px;object-fit:contain}.eyebrow{letter-spacing:3px;color:#258b88;font-size:11px;font-weight:bold;margin-top:12px}.hero{padding:30px 24px;text-align:center;background:#eaf5f3}.hero h1{font-family:Georgia,serif;font-weight:normal;font-size:clamp(28px,5vw,44px);margin:8px 0;color:#173c3a}.hero p{color:#53716e}.cover{width:100%;max-height:440px;object-fit:cover;display:block}.content{padding:24px clamp(18px,5vw,52px)}.intro{text-align:center;line-height:1.7;color:#536763}.day{padding:24px 0;border-bottom:1px solid #e3ece9}.day h2{text-align:center;font-family:Georgia,serif;font-weight:normal;color:#1d5551}.date{text-align:center;color:#728681;font-size:13px}.desc{line-height:1.7;white-space:pre-wrap}.schedule{width:100%;border-collapse:collapse;margin:18px 0}.schedule th{background:#eaf5f3;color:#176b70;text-align:left;font-size:12px;letter-spacing:1px}.schedule td,.schedule th{padding:12px;border-bottom:1px solid #e3ece9;vertical-align:top}.schedule td:first-child{width:28%;font-weight:bold;color:#176b70}.photos{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:18px}.photos img{width:min(100%,330px);max-height:240px;object-fit:cover;border-radius:8px}.closing{background:#123d3c;color:white;text-align:center;padding:28px 18px;line-height:1.7}.closing b{letter-spacing:3px}.download{display:block;margin:24px auto;padding:13px 22px;background:#1c7773;color:#fff;border:0;border-radius:4px;font-size:14px;cursor:pointer}.error{text-align:center;padding:80px 24px;color:#536763}
+</style></head><body><main class="shell"><header class="top"><img class="logo" src="/kulu-logo.png" alt="Kulu Travels"><div class="eyebrow">KULU TRAVELS · SEAMLESS TRAVEL</div></header><div id="app"><div class="error">Loading your journey…</div></div></main>
+<script src="supabase-config.js"></script><script>
+(async function(){
+ const root=document.getElementById('app'),token=new URLSearchParams(location.search).get('t');
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const date=s=>s?new Date(s+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'}):'';
+ const fail=m=>root.innerHTML='<div class="error"><h2>Journey unavailable</h2><p>'+esc(m)+'</p><p>Please contact Kulu Travels for assistance.</p></div>';
+ if(!token){fail('This private itinerary link is incomplete.');return;}
+ try{
+  const res=await fetch(window.KTBS_SUPABASE_URL+'/functions/v1/ktbs-public-itinerary',{method:'POST',headers:{'Content-Type':'application/json','apikey':window.KTBS_SUPABASE_ANON_KEY},body:JSON.stringify({token})});
+  const data=await res.json();if(!res.ok||!data.success){fail(data.error||'This link is no longer available.');return;}
+  const it=data.itinerary,days=Array.isArray(it.days)?it.days:[];
+  const img=path=>data.images?.[path]||'';
+  const cover=it.cover_image_path&&img(it.cover_image_path)?'<img class="cover" src="'+esc(img(it.cover_image_path))+'" alt="Journey cover">':'';
+  const dayHtml=days.map((d,i)=>{
+   const rows=String(d.activities||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(line=>{
+    if(/^time\s*(?:\||\/|and)?\s*activity$/i.test(line))return '';
+    const m=line.match(/^((?:(?:0?[1-9]|1[0-2]):[0-5]\d\s*[AP]M)|(?:(?:0?[1-9]|1[0-2])\s*[AP]M)|(?:[01]?\d|2[0-3]):[0-5]\d)\s*(?:[-–|]\s*)?(.+)$/i);
+    return m?'<tr><td>'+esc(m[1])+'</td><td>'+esc(m[2])+'</td></tr>':'<tr><td>—</td><td>'+esc(line)+'</td></tr>';
+   }).join('');
+   const photos=(d.images||[]).filter(p=>img(p)).map(p=>'<img loading="lazy" src="'+esc(img(p))+'" alt="Itinerary experience">').join('');
+   return '<section class="day"><div class="date">DAY '+(i+1)+(d.date?' · '+date(d.date):'')+'</div><h2>'+esc(d.title||'Day '+(i+1))+'</h2>'+(d.description?'<p class="desc">'+esc(d.description)+'</p>':'')+(rows?'<table class="schedule"><thead><tr><th>TIME</th><th>ACTIVITY</th></tr></thead><tbody>'+rows+'</tbody></table>':'')+(photos?'<div class="photos">'+photos+'</div>':'')+'</section>';
+  }).join('');
+  root.innerHTML=cover+'<section class="hero"><h1>'+esc(it.title)+'</h1><p>'+esc(it.destination||'')+'</p><p>'+date(it.start_date)+(it.end_date?' – '+date(it.end_date):'')+'</p></section><div class="content">'+(it.client_name?'<p class="date">PREPARED EXCLUSIVELY FOR '+esc(it.client_name.toUpperCase())+'</p>':'')+(it.introduction?'<p class="intro">'+esc(it.introduction)+'</p>':'')+dayHtml+'<button class="download" onclick="window.print()">Download / Save PDF</button></div><footer class="closing"><b>KULU TRAVELS</b><br>Travel beautifully. Travel seamlessly.<br>Thank you for choosing Kulu Travels to be part of your journey.</footer>';
+ }catch(e){fail('We could not load this itinerary. Please try again or contact Kulu Travels.');}
+})();
+</script></body></html>
