@@ -28,16 +28,29 @@ function tableWrap(html){return `<div class="page-card">${html}</div>`}
 function stat(label,value,note=''){return `<div class="card"><div class="stat-label">${esc(label)}</div><div class="stat-value">${value}</div><div class="stat-note">${esc(note)}</div></div>`}
 
 async function q(table,select='*'){const {data,error}=await sb.from(table).select(select);if(error)throw error;return data||[]}
+async function ensureMasterListWorkspace(){
+ const {data,error}=await sb.rpc('current_organization_id');
+ if(error)throw error;
+ if(!data)throw new Error('No active workspace was returned for this login. Please sign out and sign in again.');
+ if(organization?.id!==data){
+  const result=await sb.from('organizations').select('id,name,slug,status,country,currency').eq('id',data).single();
+  if(result.error)throw result.error;
+  organization=result.data;
+ }
+ return data;
+}
 async function loadBookings(){
  if(isAdmin()){const {data,error}=await sb.rpc('admin_get_bookings');if(error)throw error;return data||[];}
  const {data,error}=await sb.from('bookings').select('id,booking_no,quotation_id,client_id,consultant_id,destination,departure,return_date,supplier_id,supplier_name,hotel_id,hotel_name,status,selling_amount,reference,notes,booking_date,created_at,created_by,updated_at,updated_by');if(error)throw error;return data||[];
 }
 async function loadData(){
- const [clients,quotations,quotation_items,bookings,supplierResult,hotelResult,services,history,expenses,payments,supplierPayments,profilesResult]=await Promise.all([
+ const workspaceId=await ensureMasterListWorkspace();
+ const [clients,quotations,quotation_items,bookings,supplierResult,hotelResult,serviceResult,history,expenses,payments,supplierPayments,profilesResult]=await Promise.all([
   q('clients'),q('quotations'),q('quotation_items'),loadBookings(),
-  sb.from('suppliers').select('*').eq('organization_id',organization.id),
-  sb.from('hotels').select('*').eq('organization_id',organization.id),
-  q('services'),q('travel_history'),
+  sb.from('suppliers').select('*').eq('organization_id',workspaceId),
+  sb.from('hotels').select('*').eq('organization_id',workspaceId),
+  sb.from('services').select('*').eq('organization_id',workspaceId),
+  q('travel_history'),
   isAdmin()?q('expenses'):Promise.resolve([]),q('client_payments'),isAdmin()?q('supplier_payments'):Promise.resolve([]),
   q('profiles').catch(()=>[])
  ]);
@@ -47,7 +60,9 @@ async function loadData(){
   hotels:hotelResult.error?[]:(hotelResult.data||[]),
   hotelLoadError:hotelResult.error?.message||null,
   supplierLoadError:supplierResult.error?.message||null,
-  services,history,expenses,payments,supplierPayments,profiles:profilesResult
+  serviceLoadError:serviceResult.error?.message||null,
+  services:serviceResult.error?[]:(serviceResult.data||[]),
+  history,expenses,payments,supplierPayments,profiles:profilesResult
  };
 }
 async function refresh(){await loadData();render()}
@@ -269,7 +284,7 @@ function quoteRow(item={}){return `<div class="form-grid quote-row"><label>Servi
 function calcQuote(){const rows=[...document.querySelectorAll('.quote-row')];const sub=rows.reduce((s,r)=>s+(+r.querySelector('[name=qty]').value||0)*(+r.querySelector('[name=unit_amount]').value||0),0),dis=+(document.querySelector('[name=discount]')?.value||0);if($('qSubtotal'))$('qSubtotal').textContent=money(sub);if($('qDiscount'))$('qDiscount').textContent=money(dis);if($('qTotal'))$('qTotal').textContent=money(Math.max(0,sub-dis))}
 function addQuoteItem(){const d=document.createElement('div');d.innerHTML=quoteRow();$('quoteItems').appendChild(d.firstElementChild);calcQuote()}
 function fillQuoteClient(){const c=clientById($('qClientId').value);if(!c)return;$('qClientIdText').value=c.client_code||'';$('qPhone').value=c.phone||'';$('qEmail').value=c.email||'';$('qDestination').value=c.destination||'';$('qDeparture').value=c.departure||'';$('qReturn').value=c.return_date||'';$('qAdults').value=c.adults||1;$('qChildren').value=c.children||0;$('selectedClient').style.display='block';$('selectedClient').innerHTML=`<b>${esc(c.name)}</b> · ${esc(c.client_code||'')}<br><small>${esc(c.phone||'')} · ${esc(c.email||'')}</small>`}
-async function saveServiceFromQuote(){const name=($('quoteNewService')?.value||'').trim();if(!name)return alert('Enter a service or travel item name first.');const exists=cache.services.some(s=>s.name.toLowerCase()===name.toLowerCase());if(exists)return alert('That service already exists.');const r=await sb.from('services').insert({name,active:true,created_by:me.id,updated_by:me.id});if(r.error)return alert(r.error.message);await loadData();$('quoteItems').insertAdjacentHTML('beforeend',quoteRow({service_name:name}));$('quoteNewService').value='';alert('Service saved to the master list and added to this quotation.');calcQuote()}
+async function saveServiceFromQuote(){const name=($('quoteNewService')?.value||'').trim();if(!name)return alert('Enter a service or travel item name first.');const exists=cache.services.some(s=>s.name.toLowerCase()===name.toLowerCase());if(exists)return alert('That service already exists.');const r=await sb.from('services').insert({name,active:true,organization_id:organization.id,created_by:me.id,updated_by:me.id});if(r.error)return alert(r.error.message);await loadData();$('quoteItems').insertAdjacentHTML('beforeend',quoteRow({service_name:name}));$('quoteNewService').value='';alert('Service saved to the master list and added to this quotation.');calcQuote()}
 async function newQuotation(existing=null){
  if(existing&&!isAdmin())return alert('Only an administrator can edit saved quotations.');
  const q=existing||{};const clients=cache.clients.map(c=>`<option value="${c.id}" ${c.id===q.client_id?'selected':''}>${esc(c.name)} — ${esc(c.client_code||'')}</option>`).join('');const items=existing?quoteItemsFor(existing.id):[{}];
@@ -1072,14 +1087,17 @@ async function hotelsPage(){
  const actions='<button class="primary" onclick="newHotel()">+ New Hotel</button><span class="muted">Hotels organized by destination</span>';
  $('content').innerHTML=`<div class="toolbar"><input id="hotelFilter" placeholder="Search hotels by name, destination or contact…" oninput="filterHotelList()"><select id="hotelDestinationFilter" onchange="filterHotelList()"><option value="">All destinations</option></select>${actions}</div>${tableWrap('<div id="hotelTable" class="empty">Loading hotel records…</div>')}`;
  const target=$('hotelTable');
- const result=await sb.from('hotels').select('*').eq('organization_id',organization.id).order('name');
- if(!target)return;
- if(result.error){target.innerHTML='Unable to load hotel records: '+esc(result.error.message);return;}
- cache.hotels=result.data||[];
- const destinations=[...new Set(cache.hotels.map(h=>hotelDestinationGroup(h.destination)).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
- $('hotelDestinationFilter').innerHTML='<option value="">All destinations</option>'+destinations.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
- target.innerHTML=hotelTable(cache.hotels);
- if(!cache.hotels.length)target.innerHTML='No hotel records were returned for this workspace.';
+ try{
+  const workspaceId=await ensureMasterListWorkspace();
+  const result=await sb.from('hotels').select('*').eq('organization_id',workspaceId).order('name');
+  if(!target)return;
+  if(result.error){target.innerHTML='Unable to load hotel records: '+esc(result.error.message);return;}
+  cache.hotels=result.data||[];
+  const destinations=[...new Set(cache.hotels.map(h=>hotelDestinationGroup(h.destination)).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  $('hotelDestinationFilter').innerHTML='<option value="">All destinations</option>'+destinations.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  target.innerHTML=hotelTable(cache.hotels);
+  if(!cache.hotels.length)target.innerHTML='No hotel records were returned for this workspace.';
+ }catch(e){if(target)target.innerHTML='Unable to load hotel records: '+esc(e.message);}
 }
 function hotelTable(rows){
  if(!rows.length)return '<div class="empty">No hotel records match your search.</div>';
@@ -1108,11 +1126,14 @@ async function servicesPage(){
  const actions=isAdmin()?'<button class="primary" onclick="newService()">+ New Service / Travel Item</button>':'<span class="muted">Shared service directory · View only</span>';
  $('content').innerHTML=`<div class="toolbar">${actions}</div>${tableWrap('<div id="serviceTable" class="empty">Loading services…</div>')}`;
  const target=$('serviceTable');
- const result=await sb.from('services').select('*').eq('organization_id',organization.id).order('name');
- if(!target)return;
- if(result.error){target.innerHTML='Unable to load services: '+esc(result.error.message);return;}
- cache.services=result.data||[];
- target.innerHTML=cache.services.length?`<table><thead><tr><th>Service / Item</th><th>Category</th><th>Destination</th><th>Active</th><th></th></tr></thead><tbody>${cache.services.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.category||'')}</td><td>${esc(s.destination||'')}</td><td>${s.active?'Yes':'No'}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('services','${s.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'No service records were returned for this workspace.';
+ try{
+  const workspaceId=await ensureMasterListWorkspace();
+  const result=await sb.from('services').select('*').eq('organization_id',workspaceId).order('name');
+  if(!target)return;
+  if(result.error){target.innerHTML='Unable to load services: '+esc(result.error.message);return;}
+  cache.services=result.data||[];
+  target.innerHTML=cache.services.length?`<table><thead><tr><th>Service / Item</th><th>Category</th><th>Destination</th><th>Active</th><th></th></tr></thead><tbody>${cache.services.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.category||'')}</td><td>${esc(s.destination||'')}</td><td>${s.active?'Yes':'No'}</td><td>${isAdmin()?`<button class="link-btn" onclick="deleteMaster('services','${s.id}')">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:'No service records were returned for this workspace.';
+ }catch(e){if(target)target.innerHTML='Unable to load services: '+esc(e.message);}
 }
 async function newSupplier(){
   openModal('Add Supplier',`<form id="sForm"><div class="form-grid">
@@ -1126,7 +1147,7 @@ async function newSupplier(){
   $('sForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));f.created_by=me.id;f.organization_id=organization.id;const r=await sb.from('suppliers').insert(f);if(r.error)return alert(r.error.message);await refresh();closeModal();go('suppliers')}
 }
 async function newHotel(){openModal('Add Hotel',`<form id="hForm"><div class="form-grid"><label>Hotel Name<input name="name" required></label><label>Destination<input name="destination"></label><label>Contact Person<input name="contact_person"></label><label>Phone<input name="phone" placeholder="+254…"></label><label>Email<input type="email" name="email"></label><label>Legacy Contact / Other Details<input name="contact"></label></div><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Hotel</button></div></form>`);$('hForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));f.created_by=me.id;f.organization_id=organization.id;const r=await sb.from('hotels').insert(f);if(r.error)return alert(r.error.message);await refresh();closeModal();go('hotels')}}
-function newService(){openModal('Add Service / Travel Item',`<form id="svForm"><label>Service Name<input name="name" required></label><label>Category<input name="category" placeholder="Flights, Safari, Accommodation…"></label><label>Destination<input name="destination"></label><label>Default Amount (KES)<input type="number" name="default_amount" value="0"></label><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Service</button></div></form>`);$('svForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));f.default_amount=+f.default_amount||0;f.created_by=me.id;const r=await sb.from('services').insert(f);if(r.error)return alert(r.error.message);await refresh();closeModal();go('services')}}
+function newService(){openModal('Add Service / Travel Item',`<form id="svForm"><label>Service Name<input name="name" required></label><label>Category<input name="category" placeholder="Flights, Safari, Accommodation…"></label><label>Destination<input name="destination"></label><label>Default Amount (KES)<input type="number" name="default_amount" value="0"></label><div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Service</button></div></form>`);$('svForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));f.default_amount=+f.default_amount||0;f.created_by=me.id;f.organization_id=organization.id;const r=await sb.from('services').insert(f);if(r.error)return alert(r.error.message);await refresh();closeModal();go('services')}}
 async function deleteMaster(table,id){if(!isAdmin())return;if(!confirm('Delete this master item?'))return;const r=await sb.from(table).delete().eq('id',id);if(r.error)return alert(r.error.message);await refresh();render()}
 
 function financePage(){if(!isAdmin()){alert('Finance is available to administrators only.');go('dashboard');return;}const rows=cache.bookings.map(financeForBooking),sales=rows.reduce((a,b)=>a+b.selling,0),paid=rows.reduce((a,b)=>a+b.clientPaid,0),cost=rows.reduce((a,b)=>a+b.cost,0),sp=rows.reduce((a,b)=>a+b.supplierPaid,0),ex=rows.reduce((a,b)=>a+b.exp,0);$('content').innerHTML=`<div class="grid stats">${stat('Selling Amount',money(sales),'Live bookings')}${stat('Client Paid',money(paid),'Receipts recorded')}${stat('Client Balance',money(sales-paid),'Outstanding')}${stat('Supplier Cost',money(cost),'Committed cost')}${stat('Supplier Paid',money(sp),'Paid to suppliers')}${stat('Supplier Pending',money(cost-sp),'Outstanding')}${stat('Gross Profit',money(sales-cost),'Selling less supplier cost')}${stat('Net Profit',money(sales-cost-ex),'After other expenses')}</div>${tableWrap(`<div class="section-head"><h3>Booking Finance</h3><div><button class="primary" onclick="recordPayment()">+ Client Payment</button> <button onclick="recordSupplierPayment()">+ Supplier Payment</button></div></div>${bookingTable()}`)}`}
