@@ -1,5 +1,47 @@
 const { createClient } = window.supabase;
-const sb = createClient(window.KTBS_SUPABASE_URL, window.KTBS_SUPABASE_ANON_KEY);
+const rawSb = createClient(window.KTBS_SUPABASE_URL, window.KTBS_SUPABASE_ANON_KEY);
+const PREVIEW_READ_ONLY = window.KTBS_READ_ONLY_PREVIEW === true;
+const READ_ONLY_RPC_ALLOWLIST = new Set([
+  'get_my_profile',
+  'current_organization_id',
+  'is_platform_admin',
+  'admin_get_bookings',
+  'platform_admin_list_workspaces'
+]);
+const sb = PREVIEW_READ_ONLY ? new Proxy(rawSb, {
+  get(target, property) {
+    if (property === 'from') return (...args) => {
+      const query = target.from(...args);
+      return new Proxy(query, {
+        get(builder, method) {
+          if (['insert', 'update', 'upsert', 'delete'].includes(String(method))) {
+            return () => { throw new Error('This KTBS preview is read-only. No live records can be changed here.'); };
+          }
+          const value = Reflect.get(builder, method, builder);
+          return typeof value === 'function' ? value.bind(builder) : value;
+        }
+      });
+    };
+    if (property === 'rpc') return (name, ...args) => {
+      if (!READ_ONLY_RPC_ALLOWLIST.has(name)) {
+        throw new Error('This KTBS preview blocks database-changing actions. Use the live system for approved work.');
+      }
+      return target.rpc(name, ...args);
+    };
+    const value = Reflect.get(target, property, target);
+    return typeof value === 'function' ? value.bind(target) : value;
+  }
+}) : rawSb;
+
+if (PREVIEW_READ_ONLY) {
+  document.addEventListener('DOMContentLoaded', () => {
+    const notice = document.createElement('div');
+    notice.textContent = 'DEVELOPMENT PREVIEW · READ ONLY · Changes to clients, quotations, bookings, hotels, services and payments are blocked.';
+    notice.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:12000;background:#7b4b12;color:#fff;text-align:center;padding:7px 12px;font:700 11px Arial,sans-serif;letter-spacing:.04em';
+    document.body.appendChild(notice);
+    document.body.style.paddingTop = '30px';
+  });
+}
 
 const STATUS=['New Enquiry','Quotation','Confirmed','Partially Paid','Fully Paid','In Progress','COMPLETED','Cancelled'];
 let page='dashboard', me=null, profile=null, organization=null, subscription=null, platformAdmin=false;
@@ -1617,7 +1659,7 @@ async function enterApp(user){
     return alert('Your organization workspace could not be loaded. Please contact your platform administrator.');
   }
   organization=orgRecord.data;
-  await sb.rpc('refresh_current_subscription_status');
+  if(!PREVIEW_READ_ONLY) await sb.rpc('refresh_current_subscription_status');
   const subscriptionResult=await sb.from('organization_subscriptions').select('plan_code,status,trial_started_at,trial_ends_at,current_period_ends_at').eq('organization_id',organization.id).maybeSingle();
   subscription=subscriptionResult.error?null:subscriptionResult.data;
   const subscriptionBadge=$('subscriptionBadge');
